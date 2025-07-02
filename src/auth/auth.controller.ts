@@ -36,6 +36,7 @@ export class AuthController {
   })
   @Post("login")
   login(@Body() dto: CreateUserDto) {
-    return this.authService.login(dto.email, dto.password);
+    const { email, password } = dto;
+    return this.authService.login(email, password);
   }
 }
