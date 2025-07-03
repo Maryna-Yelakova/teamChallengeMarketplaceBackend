@@ -10,7 +10,7 @@ export class AuthController {
   @ApiOperation({ summary: "Register new user" })
   @ApiBody({
     schema: {
-      type: "CreateUserDto",
+      type: "object",
       properties: {
         firstName: { type: "string", example: "Bob" },
         phone: { type: "string", example: "+380999912345" },
