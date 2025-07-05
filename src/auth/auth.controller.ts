@@ -1,7 +1,8 @@
-import { Controller, Post, Body } from "@nestjs/common";
+import { Controller, Post, Body, Res } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/users/dtos/create-user.dto";
 import { ApiBody, ApiOperation } from "@nestjs/swagger";
+import type { Response } from "express";
 
 @Controller("auth")
 export class AuthController {
@@ -20,8 +21,8 @@ export class AuthController {
     }
   })
   @Post("register")
-  register(@Body() dto: CreateUserDto) {
-    return this.authService.register(dto);
+  register(@Res({ passthrough: true }) res: Response, @Body() dto: CreateUserDto) {
+    return this.authService.register(res, dto);
   }
 
   @ApiOperation({ summary: "Login existing user" })
@@ -35,8 +36,8 @@ export class AuthController {
     }
   })
   @Post("login")
-  login(@Body() dto: CreateUserDto) {
+  login(@Res({ passthrough: true }) res: Response, @Body() dto: CreateUserDto) {
     const { email, password } = dto;
-    return this.authService.login(email, password);
+    return this.authService.login(res, email, password);
   }
 }
