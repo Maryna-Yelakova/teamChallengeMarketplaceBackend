@@ -13,6 +13,10 @@ import { ConfigModule } from "@nestjs/config";
       secret: process.env.JWT_SECRET,
       signOptions: {
         algorithm: "HS256"
+      },
+      verifyOptions: {
+        algorithms: ["HS256"],
+        ignoreExpiration: false
       }
     })
   ],

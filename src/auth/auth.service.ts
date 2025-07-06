@@ -1,10 +1,19 @@
-import { Injectable, ConflictException, UnauthorizedException } from "@nestjs/common";
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { UsersService } from "../users/users.service";
 import { CreateUserDto } from "src/users/dtos/create-user.dto";
 import { ConfigService } from "@nestjs/config";
-import type { Response } from "express";
+import type { Request, Response } from "express";
+
+interface IJwtPeyload {
+  id: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -40,19 +49,41 @@ export class AuthService {
     return this.auth(res, user.id);
   }
 
-  async validateUser(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) return null;
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    return isMatch ? user : null;
-  }
-
   async login(res: Response, email: string, password: string) {
     const user = await this.validateUser(email, password);
     if (!user) throw new UnauthorizedException();
 
     return this.auth(res, user.id);
+  }
+
+  refresh(req: Request, res: Response) {
+    if (typeof req.cookies["refresh_token"] !== "string") {
+      throw new UnauthorizedException({ message: "Refresh token is missing or must by a string" });
+    }
+
+    const refreshToken: string = req.cookies["refresh_token"];
+
+    if (!refreshToken) {
+      throw new UnauthorizedException("Refresh token is missing");
+    }
+
+    const payload: IJwtPeyload = this.jwtService.verify(refreshToken);
+
+    return this.auth(res, payload.id);
+  }
+
+  private async validateUser(email: string, password: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException("Email or password wrong");
+    }
+
+    return user;
   }
 
   private auth(res: Response, id: string) {
@@ -62,7 +93,7 @@ export class AuthService {
   }
 
   private generateTokens(userId: string) {
-    const payload = { id: userId };
+    const payload: IJwtPeyload = { id: userId };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: this.JWT_ACCESS_TOKEN_TTL }),
       refresh_token: this.jwtService.sign(payload, { expiresIn: this.JWT_REFRESH_TOKEN_TTL })

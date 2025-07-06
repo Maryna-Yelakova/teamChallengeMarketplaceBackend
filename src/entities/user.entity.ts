@@ -20,8 +20,14 @@ export class User {
   @Column()
   phone: string;
 
+  @Column({ default: false })
+  isPhoneValidated: boolean;
+
   @Column({ unique: true })
   email: string;
+
+  @Column({ default: false })
+  isEmailValideted: boolean;
 
   @Column()
   password: string;

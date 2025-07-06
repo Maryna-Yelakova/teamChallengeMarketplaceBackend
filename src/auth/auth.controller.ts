@@ -1,8 +1,8 @@
-import { Controller, Post, Body, Res } from "@nestjs/common";
+import { Controller, Post, Body, Res, HttpCode, HttpStatus, Req } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/users/dtos/create-user.dto";
 import { ApiBody, ApiOperation } from "@nestjs/swagger";
-import type { Response } from "express";
+import type { Request, Response } from "express";
 
 @Controller("auth")
 export class AuthController {
@@ -35,9 +35,17 @@ export class AuthController {
       }
     }
   })
+  @HttpCode(HttpStatus.OK)
   @Post("login")
   login(@Res({ passthrough: true }) res: Response, @Body() dto: CreateUserDto) {
     const { email, password } = dto;
     return this.authService.login(res, email, password);
+  }
+
+  @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
+  @HttpCode(HttpStatus.OK)
+  @Post("refresh")
+  refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    return this.authService.refresh(req, res);
   }
 }
