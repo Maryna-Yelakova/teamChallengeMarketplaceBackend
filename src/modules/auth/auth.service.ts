@@ -7,28 +7,24 @@ import {
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { UsersService } from "../users/users.service";
-import { CreateUserDto } from "src/users/dtos/create-user.dto";
+import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
-
-interface IJwtPeyload {
-  id: string;
-}
+import { JwtPayload } from "../../common/types";
+import { setCookie } from "src/common/utils";
 
 @Injectable()
 export class AuthService {
-  private JWT_SECRET: string;
   private JWT_ACCESS_TOKEN_TTL: string;
   private JWT_REFRESH_TOKEN_TTL: string;
 
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private conficService: ConfigService
+    private configService: ConfigService
   ) {
-    this.JWT_SECRET = conficService.getOrThrow<string>("JWT_SECRET");
-    this.JWT_ACCESS_TOKEN_TTL = conficService.getOrThrow<string>("JWT_ACCESS_TOKEN_TTL");
-    this.JWT_REFRESH_TOKEN_TTL = conficService.getOrThrow<string>("JWT_REFRESH_TOKEN_TTL");
+    this.JWT_ACCESS_TOKEN_TTL = configService.getOrThrow<string>("JWT_ACCESS_TOKEN_TTL");
+    this.JWT_REFRESH_TOKEN_TTL = configService.getOrThrow<string>("JWT_REFRESH_TOKEN_TTL");
   }
 
   async register(res: Response, dto: CreateUserDto) {
@@ -67,43 +63,38 @@ export class AuthService {
       throw new UnauthorizedException("Refresh token is missing");
     }
 
-    const payload: IJwtPeyload = this.jwtService.verify(refreshToken);
+    const payload: JwtPayload = this.jwtService.verify(refreshToken);
 
-    return this.auth(res, payload.id);
+    return this.auth(res, payload.userId);
   }
 
-  private async validateUser(email: string, password: string) {
+  async validateUser(email: string, pass: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
       throw new NotFoundException("User not found");
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
       throw new UnauthorizedException("Email or password wrong");
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
 
-    return user;
+    return result;
   }
 
   private auth(res: Response, id: string) {
     const { access_token, refresh_token } = this.generateTokens(id);
-    this.setCookie(res, refresh_token, new Date(Date.now() + 1000 * 60 * 60 * 24));
+    setCookie(res, refresh_token, new Date(Date.now() + 1000 * 60 * 60 * 24));
     return { access_token };
   }
 
   private generateTokens(userId: string) {
-    const payload: IJwtPeyload = { id: userId };
+    const payload: JwtPayload = { userId };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: this.JWT_ACCESS_TOKEN_TTL }),
       refresh_token: this.jwtService.sign(payload, { expiresIn: this.JWT_REFRESH_TOKEN_TTL })
     };
-  }
-
-  private setCookie(res: Response, value: string, expires: Date) {
-    res.cookie("refresh_token", value, {
-      httpOnly: true,
-      expires
-    });
   }
 }
