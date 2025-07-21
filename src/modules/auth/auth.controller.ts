@@ -3,7 +3,8 @@ import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 import { ApiBody, ApiOperation } from "@nestjs/swagger";
 import type { Request, Response } from "express";
-import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+
+import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 // import { LocalAuthGuard } from "./local-auth.guard";
 
 @Controller("auth")
@@ -47,7 +48,7 @@ export class AuthController {
 
   @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtRefreshGuard)
   @Post("refresh")
   refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     return this.authService.refresh(req, res);
