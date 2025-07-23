@@ -14,6 +14,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle("MarketPlace API")
     .setDescription("API docs")
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("/docs", app, document);

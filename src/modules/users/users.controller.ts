@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, UseGuards } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
 @Controller("users")
 export class UsersController {
@@ -15,6 +16,7 @@ export class UsersController {
     example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
   @Get("/:id")
+  @UseGuards(JwtAuthGuard)
   async getUserById(@Param("id") id: string) {
     return await this.UsersService.findById(id);
   }
