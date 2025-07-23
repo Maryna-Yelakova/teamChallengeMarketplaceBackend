@@ -5,6 +5,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule } from "@nestjs/config";
 import { UsersModule } from "./users/users.module";
 import { AuthModule } from "./auth/auth.module";
+import { GoogleAuthModule } from "./auth/google/google.module";
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { AuthModule } from "./auth/auth.module";
       synchronize: true
     }),
     UsersModule,
-    AuthModule
+    AuthModule,
+    GoogleAuthModule
   ],
   controllers: [AppController],
   providers: [AppService]
