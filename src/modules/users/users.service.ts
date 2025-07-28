@@ -3,6 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "../../entities/user.entity";
 import { Repository } from "typeorm";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
+import { BadRequestException } from "@nestjs/common";
 
 @Injectable()
 export class UsersService {
@@ -12,6 +13,11 @@ export class UsersService {
   ) {}
 
   async create(data: Partial<User>) {
+
+    const existingUser = await this.usersRepo.findOne({ where: { email: data.email } });
+    if (existingUser) {
+      throw new BadRequestException("User with this email already exists");
+    }
     const user = this.usersRepo.create(data);
     return await this.usersRepo.save(user);
   }

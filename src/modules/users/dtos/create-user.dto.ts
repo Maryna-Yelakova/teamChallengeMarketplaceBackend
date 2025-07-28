@@ -12,7 +12,7 @@ export class CreateUserDto {
   })
   phone: string;
 
-  @IsEmail()
+  @IsEmail({}, { message: "Invalid email format" })
   @IsNotEmpty()
   email: string;
 
