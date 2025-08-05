@@ -1,10 +1,12 @@
 import { Controller, Post, Body, Res, HttpCode, HttpStatus, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
-import { ApiBody, ApiOperation } from "@nestjs/swagger";
+import { ApiOperation } from "@nestjs/swagger";
 import type { Request, Response } from "express";
 
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
+import { LoginUserDto } from "../users/dtos/login-user.dto";
+
 // import { LocalAuthGuard } from "./local-auth.guard";
 
 @Controller("auth")
@@ -12,37 +14,17 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: "Register new user" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        firstName: { type: "string", example: "Bob" },
-        phone: { type: "string", example: "+380999912345" },
-        email: { type: "string", example: "bob@mail.com" },
-        password: { type: "string", example: "supersecret" }
-      }
-    }
-  })
   @Post("register")
-  register(@Res({ passthrough: true }) res: Response, @Body() dto: CreateUserDto) {
-    return this.authService.register(res, dto);
+  register(@Res({ passthrough: true }) res: Response, @Body() createUserDto: CreateUserDto) {
+    return this.authService.register(res, createUserDto);
   }
 
   @ApiOperation({ summary: "Login existing user" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        email: { type: "string", example: "bob@mail.com" },
-        password: { type: "string", example: "supersecret" }
-      }
-    }
-  })
   @HttpCode(HttpStatus.OK)
   //@UseGuards(LocalAuthGuard)
   @Post("login")
-  login(@Res({ passthrough: true }) res: Response, @Body() dto: CreateUserDto) {
-    const { email, password } = dto;
+  login(@Res({ passthrough: true }) res: Response, @Body() loginUserDto: LoginUserDto) {
+    const { email, password } = loginUserDto;
     return this.authService.login(res, email, password);
   }
 
@@ -51,6 +33,7 @@ export class AuthController {
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
   refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    return this.authService.refresh(req, res);
+    const user = req.user as { userId: string };
+    return this.authService.refresh(user.userId, res);
   }
 }

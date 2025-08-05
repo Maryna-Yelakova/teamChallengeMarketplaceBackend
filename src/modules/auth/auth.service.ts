@@ -34,10 +34,8 @@ export class AuthService {
     const hash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.usersService.create({
-      email: dto.email,
-      password: hash,
-      firstName: dto.firstName,
-      phone: dto.phone
+      ...dto,
+      password: hash
     });
 
     console.log(user);
@@ -52,20 +50,8 @@ export class AuthService {
     return this.auth(res, user.id);
   }
 
-  refresh(req: Request, res: Response) {
-    if (typeof req.cookies["refresh_token"] !== "string") {
-      throw new UnauthorizedException({ message: "Refresh token is missing or must by a string" });
-    }
-
-    const refreshToken: string = req.cookies["refresh_token"];
-
-    if (!refreshToken) {
-      throw new UnauthorizedException("Refresh token is missing");
-    }
-
-    const payload: JwtPayload = this.jwtService.verify(refreshToken);
-
-    return this.auth(res, payload.userId);
+  refresh(userId: string, res: Response) {
+    return this.auth(res, userId);
   }
 
   async validateUser(email: string, pass: string) {
