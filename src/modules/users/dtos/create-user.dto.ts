@@ -9,6 +9,9 @@ export class CreateUserDto {
   @ApiProperty({ description: "User's phone number", example: "+380991234567" })
   @IsNotEmpty()
   @IsString()
+  @Matches(/^\+\d{10,15}$/, {
+    message: "Phone number must be in international format, e.g. +12345678901"
+  })
   phone: string;
 
   @ApiProperty({ description: "User's email", example: "basilbasilyuk@mail.gov" })
