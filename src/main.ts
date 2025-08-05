@@ -3,13 +3,18 @@ import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as cookieParcer from "cookie-parser";
+import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ["error", "warn", "log", "debug"]
+  });
 
   app.use(cookieParcer());
 
   app.useGlobalPipes(new ValidationPipe());
+
+  app.useGlobalFilters(new UnauthorizedExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle("MarketPlace API")
