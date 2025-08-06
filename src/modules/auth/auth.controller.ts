@@ -1,10 +1,19 @@
-import { Controller, Post, Body, Res, HttpCode, HttpStatus, Req, UseGuards, Patch } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  HttpCode,
+  HttpStatus,
+  Req,
+  UseGuards,
+  Patch
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
 import { ChangePasswordDto } from "./dtos/change-password.dto";
 import { ApiBody, ApiOperation } from "@nestjs/swagger";
-
 
 import type { Request, Response } from "express";
 import { RequestWithUser } from "../../common/types";
@@ -14,7 +23,6 @@ import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
 import { LoginUserDto } from "../users/dtos/login-user.dto";
-
 
 // import { LocalAuthGuard } from "./local-auth.guard";
 
@@ -41,9 +49,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
-  refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const user = req.user as { userId: string };
-    return this.authService.refresh(user.userId, res);
+  refresh(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
+    return this.authService.refresh(req.user.userId, res);
   }
 
   @ApiOperation({ summary: "Change user password" })
