@@ -14,8 +14,12 @@ export class CreateUserDto {
   })
   phone: string;
 
+
+  @IsEmail({}, { message: "Invalid email format" })
+
   @ApiProperty({ description: "User's email", example: "basilbasilyuk@mail.gov" })
-  @IsEmail()
+
+
   @IsNotEmpty()
   email: string;
 
