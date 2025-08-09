@@ -46,4 +46,21 @@ export class UsersService {
   async delete(id: string): Promise<void> {
     await this.usersRepo.delete({ id });
   }
+
+  async changePhone(id: string, newPhone: string): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+
+    const existingUser = await this.usersRepo.findOne({ where: { phone: newPhone } });
+    if (existingUser && existingUser.id !== id) {
+      throw new BadRequestException("Phone number is already in use");
+    }
+
+    user.phone = newPhone;
+    user.isPhoneValidated = false;
+    
+    return await this.usersRepo.save(user);
+  }
 }
