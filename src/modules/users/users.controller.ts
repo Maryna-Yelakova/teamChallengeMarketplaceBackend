@@ -18,6 +18,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 export class UsersController {
   constructor(private UsersService: UsersService) {}
 
+  @Get("/:id")
   @ApiOperation({ summary: "Get user by ID" })
   @ApiBearerAuth()
   @ApiParam({
@@ -27,7 +28,6 @@ export class UsersController {
     example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
   @UseGuards(JwtAuthGuard)
-  @Get("/:id")
   async getUserById(@Param("id") id: string) {
     const user = await this.UsersService.findById(id);
     if (!user) {
@@ -39,6 +39,7 @@ export class UsersController {
     return result;
   }
 
+  @Delete(":id")
   @ApiOperation({ summary: "Delete user" })
   @ApiParam({
     name: "id",
@@ -48,11 +49,11 @@ export class UsersController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Delete(":id")
   async delete(@Param("id") id: string) {
     await this.UsersService.delete(id);
   }
 
+  @Patch(":id")
   @ApiOperation({ summary: "Update a specific user" })
   @ApiParam({
     name: "id",
@@ -62,7 +63,6 @@ export class UsersController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Patch(":id")
   async updateUser(@Param("id") id: string, @Body() updateUserDto: UpdateUsersDto) {
     return await this.UsersService.update(id, updateUserDto);
   }
