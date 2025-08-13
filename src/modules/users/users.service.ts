@@ -4,6 +4,10 @@ import { User } from "../../entities/user.entity";
 import { Repository } from "typeorm";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 
+import { BadRequestException } from "@nestjs/common";
+
+import { CreateUserDto } from "./dtos/create-user.dto";
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -11,8 +15,13 @@ export class UsersService {
     private usersRepo: Repository<User>
   ) {}
 
-  async create(data: Partial<User>) {
-    const user = this.usersRepo.create(data);
+  async create(createUserDto: CreateUserDto) {
+    const existingUser = await this.usersRepo.findOne({ where: { email: createUserDto.email } });
+    if (existingUser) {
+      throw new BadRequestException("User with this email already exists");
+    }
+
+    const user = this.usersRepo.create(createUserDto);
     return await this.usersRepo.save(user);
   }
 
@@ -33,5 +42,22 @@ export class UsersService {
 
   async delete(id: string): Promise<void> {
     await this.usersRepo.delete({ id });
+  }
+
+  async changePhone(id: string, newPhone: string): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+
+    const existingUser = await this.usersRepo.findOne({ where: { phone: newPhone } });
+    if (existingUser && existingUser.id !== id) {
+      throw new BadRequestException("Phone number is already in use");
+    }
+
+    user.phone = newPhone;
+    user.isPhoneValidated = false;
+    
+    return await this.usersRepo.save(user);
   }
 }

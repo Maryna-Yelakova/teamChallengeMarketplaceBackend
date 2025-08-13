@@ -6,6 +6,7 @@ import { ConfigModule } from "@nestjs/config";
 import { GoogleAuthModule } from "./auth/google/google.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { SellersModule } from './modules/sellers/sellers.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthModule } from "./modules/auth/auth.module";
     }),
     UsersModule,
     AuthModule,
+    SellersModule,
     GoogleAuthModule
   ],
   controllers: [AppController],
