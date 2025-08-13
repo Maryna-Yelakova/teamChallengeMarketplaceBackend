@@ -3,6 +3,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { ConfigModule } from "@nestjs/config";
+import { GoogleAuthModule } from "./auth/google/google.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { SellersModule } from './modules/sellers/sellers.module';
@@ -18,7 +19,8 @@ import { SellersModule } from './modules/sellers/sellers.module';
     }),
     UsersModule,
     AuthModule,
-    SellersModule
+    SellersModule,
+    GoogleAuthModule
   ],
   controllers: [AppController],
   providers: [AppService]
