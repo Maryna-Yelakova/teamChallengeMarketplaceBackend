@@ -4,20 +4,24 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  // JoinColumn,
+  // ManyToOne,
   PrimaryGeneratedColumn
 } from "typeorm";
-import { Seller } from "./seller.entity";
 import { Product } from "./product.entity";
-import { User } from "./user.entity";
+import { Seller } from "./seller.entity";
+
+// import { Product } from "./product.entity";
+// import { User } from "./user.entity";
 
 @Entity("reviews")
 export class Review {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => User, user => user.reviews)
-  @JoinColumn({ name: "userId" })
-  user: User;
+  // @ManyToOne(() => User, user => user.reviews)
+  // @JoinColumn({ name: "userId" })
+  // user: User;
 
   @Column()
   userId: string;

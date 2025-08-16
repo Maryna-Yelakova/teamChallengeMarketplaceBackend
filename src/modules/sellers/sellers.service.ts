@@ -24,7 +24,7 @@ export class SellersService {
   }
 
   findOne(id: string) {
-    return this.sellersRepo.findOne({ where: { id }, relations: ["user", "products", "reviews"] });
+    return this.sellersRepo.findOne({ where: { id }, relations: ["user", "products"] });
   }
 
   update(id: string, updateSellerDto: UpdateSellerDto) {

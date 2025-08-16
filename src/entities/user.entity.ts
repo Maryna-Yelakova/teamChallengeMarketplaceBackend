@@ -10,7 +10,7 @@ import { Seller } from "./seller.entity";
 import { Address } from "./address.entity";
 import { Cart } from "./cart.entity";
 import { Wishlist } from "./wishlist.entity";
-import { Review } from "./review.entity";
+// import { Review } from "./review.entity";
 
 @Entity({ name: "users" })
 export class User {
@@ -59,8 +59,8 @@ export class User {
   @OneToMany(() => Wishlist, wishlist => wishlist.user)
   wishlists: Wishlist[];
 
-  @OneToMany(() => Review, review => review.user)
-  reviews: Review[];
+  // @OneToMany(() => Review, review => review.user)
+  // reviews: Review[];
 
   @CreateDateColumn()
   createdAt: Date;
