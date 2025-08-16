@@ -30,4 +30,4 @@ async function bootstrap() {
 }
 bootstrap()
   .then(port => console.log(`App successfully started on port ${port} !`))
-  .catch(() => console.log("Somethin went wrong"));
+  .catch(err => console.log("Somethin went wrong", err));
