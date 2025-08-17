@@ -9,6 +9,8 @@ import { SellersModule } from "./modules/sellers/sellers.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { CategoriesModule } from "./modules/categories/categories.module";
 import { SubcategoriesModule } from "./modules/subcategories/subcategories.module";
+import { OtpModule } from "./modules/otp/otp.module";
+
 
 @Module({
   imports: [
@@ -24,7 +26,8 @@ import { SubcategoriesModule } from "./modules/subcategories/subcategories.modul
     SellersModule,
     ProductsModule,
     CategoriesModule,
-    SubcategoriesModule
+    SubcategoriesModule,
+    OtpModule
   ],
   controllers: [AppController],
   providers: [AppService]
