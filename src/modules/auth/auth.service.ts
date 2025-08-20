@@ -52,6 +52,11 @@ export class AuthService {
     return this.auth(res, user.id);
   }
 
+  logout(res: Response) {
+    setCookie(res, "", new Date(0));
+    return { message: "Logged out successfully" };
+  }
+
   refresh(userId: string, res: Response) {
     return this.auth(res, userId);
   }
@@ -94,7 +99,7 @@ export class AuthService {
     }
 
     const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
-    
+
     await this.usersService.update(userId, { password: hashedNewPassword });
 
     return { message: "Password changed successfully" };
