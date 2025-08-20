@@ -13,7 +13,7 @@ import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
 import { ChangePasswordDto } from "./dtos/change-password.dto";
-import { ApiBody, ApiOperation } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation } from "@nestjs/swagger";
 
 import type { Request, Response } from "express";
 import { RequestWithUser } from "../../common/types";
@@ -43,6 +43,15 @@ export class AuthController {
   login(@Res({ passthrough: true }) res: Response, @Body() loginUserDto: LoginUserDto) {
     const { email, password } = loginUserDto;
     return this.authService.login(res, email, password);
+  }
+
+  @ApiOperation({ summary: "Logout user" })
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post("logout")
+  logout(@Res({ passthrough: true }) res: Response) {
+    return this.authService.logout(res);
   }
 
   @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
