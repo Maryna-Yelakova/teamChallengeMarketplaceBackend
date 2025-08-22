@@ -33,21 +33,30 @@ export class AuthService {
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException("Email already in use");
 
+    const existingPhone = await this.usersService.findByPhone(dto.phone);
+    if (existingPhone) throw new ConflictException("Phone number already in use");
+
     const hash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.usersService.create({
       ...dto,
-      password: hash
+      password: hash,
+      isPhoneValidated: false
     });
 
     console.log(user);
 
-    return this.auth(res, user.id);
+    return { message: "User created. Please verify your phone number to complete registration.", userId: user.id };
   }
 
   async login(res: Response, email: string, password: string) {
     const user = await this.validateUser(email, password);
     if (!user) throw new UnauthorizedException();
+
+    const fullUser = await this.usersService.findById(user.id);
+    if (!fullUser?.isPhoneValidated) {
+      throw new UnauthorizedException("Please verify your phone number first");
+    }
 
     return this.auth(res, user.id);
   }
