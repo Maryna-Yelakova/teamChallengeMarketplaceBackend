@@ -18,7 +18,7 @@ jobs:
         run: docker build . -t ${{ secrets.IMAGE }}:latest
 
       - name: Publish image to Docker Hub
-        run: docker push ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}:latest
+        run: docker push ${{ secrets.IMAGE }}:latest
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v0.1.7
