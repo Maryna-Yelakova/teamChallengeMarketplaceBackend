@@ -15,10 +15,10 @@ jobs:
         run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
 
       - name: Build Docker image
-        run: docker build -t TCMB .
+        run: docker build -t tcmb .
 
       - name: Publish image to Docker Hub
-        run: docker push TCMB
+        run: docker push tcmb
 
       - name: executing remote ssh commands using password
         uses: appleboy/ssh-action@v0.1.7
