@@ -46,7 +46,7 @@ export class AuthService {
 
     console.log(user);
 
-    return { message: "User created. Please verify your phone number to complete registration.", userId: user.id };
+    return { message: "User created", userId: user.id };
   }
 
   async login(res: Response, email: string, password: string) {

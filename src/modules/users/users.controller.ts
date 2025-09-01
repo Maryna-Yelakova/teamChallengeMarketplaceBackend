@@ -39,6 +39,32 @@ export class UsersController {
     return result;
   }
 
+  @Get("iep")
+  @ApiOperation({ summary: "Is email present?" })
+  @ApiParam({
+    name: "email",
+    description: "The user's email",
+    type: String,
+    example: "myemail@mail.com"
+  })
+  async isEmailPresent(@Param("email") email: string) {
+    const user = await this.UsersService.findByEmail(email);
+    return { isPresent: !!user };
+  }
+
+  @Get("ipp")
+  @ApiOperation({ summary: "Is phone present?" })
+  @ApiParam({
+    name: "phone",
+    description: "The user's phone number",
+    type: String,
+    example: "+380501234567"
+  })
+  async isPhonePresent(@Param("phone") phone: string) {
+    const user = await this.UsersService.findByEmail(phone);
+    return { isPresent: !!user };
+  }
+
   @Delete(":id")
   @ApiOperation({ summary: "Delete user" })
   @ApiParam({
@@ -67,6 +93,7 @@ export class UsersController {
     return await this.UsersService.update(id, updateUserDto);
   }
 
+  @Patch(":id/change-phone")
   @ApiOperation({ summary: "Change user's phone number" })
   @ApiParam({
     name: "id",
@@ -76,7 +103,6 @@ export class UsersController {
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  @Patch(":id/change-phone")
   async changePhone(@Param("id") id: string, @Body() changePhoneDto: ChangePhoneDto) {
     const user = await this.UsersService.findById(id);
     if (!user) {
@@ -84,7 +110,7 @@ export class UsersController {
     }
 
     const updatedUser = await this.UsersService.changePhone(id, changePhoneDto.newPhone);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = updatedUser;
     return result;
