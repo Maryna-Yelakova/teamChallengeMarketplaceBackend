@@ -33,8 +33,8 @@ jobs:
             echo "Great, it works! at $(TZ='Asia/Jakarta' date "+%A %d-%b-%Y %H:%M:%S %Z")" >> deploy.txt
             sudo chmod 777 /var/run/docker.sock
 
-            docker stop $(docker ps -q)
+            docker stop ${{ secrets.CONTAINER }}
             docker rm ${{ secrets.CONTAINER }} 
-            docker rmi ${{ secrets.IMAGE }} 
+            docker rmi ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }} 
             docker pull ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}:latest
             docker run --name ${{ secrets.CONTAINER }} -d -p 3000:3000 ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}
