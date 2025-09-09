@@ -13,20 +13,14 @@ export class Subcategory {
   @Column()
   name: string;
 
-  @ApiProperty({ description: "Parent category" })
   @ManyToOne(() => Category, category => category.subcategories, { onDelete: "CASCADE" })
   @JoinColumn({ name: "categoryId" })
   category: Category;
 
-  @ApiProperty({ description: "Category ID", format: "uuid" })
+  @ApiProperty({ description: "Category ID", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" })
   @Column()
   categoryId: string;
 
-  @ApiProperty({
-    description: "Parent subcategory (for nesting)",
-    required: false,
-    type: () => Subcategory
-  })
   @ManyToOne(() => Subcategory, subcategory => subcategory.children, {
     nullable: true,
     onDelete: "CASCADE"
@@ -34,15 +28,13 @@ export class Subcategory {
   @JoinColumn({ name: "parentSubcategoryId" })
   parentSubcategory?: Subcategory;
 
-  @ApiProperty({ description: "Parent subcategory ID", format: "uuid", required: false })
+  @ApiProperty({ description: "Parent subcategory ID", format: "uuid", required: false, example: "181fe998-8066-41e1-989b-71cd9a085a55" })
   @Column({ nullable: true })
   parentSubcategoryId?: string;
 
-  @ApiProperty({ description: "List of child subcategories", type: () => [Subcategory] })
   @OneToMany(() => Subcategory, subcategory => subcategory.parentSubcategory)
   children: Subcategory[];
 
-  @ApiProperty({ description: "List of products in this subcategory", type: () => [Product] })
   @OneToMany(() => Product, product => product.subcategory)
   products: Product[];
 }

@@ -33,10 +33,12 @@ export class UpdateUsersDto {
   @IsDate()
   birthDay?: Date;
 
+  @ApiPropertyOptional({ description: "User's password", example: "mysecretword" })
   @IsOptional()
   @IsString()
   password?: string;
 
+  @ApiPropertyOptional({ description: "Whether user's phone is validated", example: false })
   @IsOptional()
   @IsBoolean()
   isPhoneValidated?: boolean;

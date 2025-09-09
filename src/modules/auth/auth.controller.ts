@@ -13,7 +13,21 @@ import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
 import { ChangePasswordDto } from "./dtos/change-password.dto";
-import { ApiBearerAuth, ApiBody, ApiOperation } from "@nestjs/swagger";
+
+import { 
+  ApiBody, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiBadRequestResponse, 
+  ApiCreatedResponse, 
+  ApiOkResponse, 
+  ApiUnauthorizedResponse,
+  ApiBearerAuth,
+  ApiTags 
+} from "@nestjs/swagger";
+
+
+
 
 import type { Request, Response } from "express";
 import { RequestWithUser } from "../../common/types";
@@ -26,17 +40,90 @@ import { LoginUserDto } from "../users/dtos/login-user.dto";
 
 // import { LocalAuthGuard } from "./local-auth.guard";
 
+@ApiTags('Auth')
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: "Register new user" })
+  @ApiCreatedResponse({ 
+    description: 'User successfully registered',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
+        firstName: { type: 'string', example: 'Василь' },
+        email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
+        phone: { type: 'string', example: '+380991234567' },
+        isPhoneValidated: { type: 'boolean', example: false },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error or user already exists',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          oneOf: [
+            { type: 'string', example: 'User with this email already exists' },
+            { type: 'array', items: { type: 'string' }, example: ['email must be an email', 'password must be longer than or equal to 6 characters'] }
+          ]
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
   @Post("register")
   register(@Res({ passthrough: true }) res: Response, @Body() createUserDto: CreateUserDto) {
     return this.authService.register(res, createUserDto);
   }
 
   @ApiOperation({ summary: "Login existing user" })
+  @ApiOkResponse({
+    description: 'User successfully logged in',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
+            firstName: { type: 'string', example: 'Василь' },
+            email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
+            phone: { type: 'string', example: '+380991234567' },
+            isPhoneValidated: { type: 'boolean', example: false }
+          }
+        },
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid credentials' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'array', items: { type: 'string' }, example: ['email must be an email'] },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
   @HttpCode(HttpStatus.OK)
   //@UseGuards(LocalAuthGuard)
   @Post("login")
@@ -55,6 +142,27 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
+  @ApiOkResponse({
+    description: 'Tokens successfully refreshed',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid refresh token',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid refresh token' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
@@ -72,6 +180,43 @@ export class AuthController {
       }
     }
   })
+  @ApiOkResponse({
+    description: 'Password successfully changed',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Password changed successfully' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid current password or validation error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { 
+          oneOf: [
+            { type: 'string', example: 'Current password is incorrect' },
+            { type: 'array', items: { type: 'string' }, example: ['newPassword must be longer than or equal to 6 characters'] }
+          ]
+        },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'User not authenticated',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @Patch("change-password")
