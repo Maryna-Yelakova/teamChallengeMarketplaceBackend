@@ -46,7 +46,7 @@ export class AuthService {
 
     console.log(user);
 
-    return { message: "User created. Please verify your phone number to complete registration.", userId: user.id };
+    return { message: "User created", userId: user.id };
   }
 
   async login(res: Response, email: string, password: string) {
@@ -59,6 +59,11 @@ export class AuthService {
     }
 
     return this.auth(res, user.id);
+  }
+
+  logout(res: Response) {
+    setCookie(res, "", new Date(0));
+    return { message: "Logged out successfully" };
   }
 
   refresh(userId: string, res: Response) {
@@ -103,7 +108,7 @@ export class AuthService {
     }
 
     const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
-    
+
     await this.usersService.update(userId, { password: hashedNewPassword });
 
     return { message: "Password changed successfully" };

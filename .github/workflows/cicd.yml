@@ -1,0 +1,40 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo ${{ secrets.DOCKER_TOKEN }} | docker login -u ${{ secrets.DOCKER_USER }} --password-stdin
+
+      - name: Build Docker image
+        run: docker build . -t ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}:latest
+
+      - name: Publish image to Docker Hub
+        run: docker push ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}:latest
+
+      - name: executing remote ssh commands using password
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_KEY }}
+          port: ${{ secrets.EC2_PORT }}
+
+          script: |
+            touch deploy.txt
+            echo "Great, it works! at $(TZ='Asia/Jakarta' date "+%A %d-%b-%Y %H:%M:%S %Z")" >> deploy.txt
+            sudo chmod 777 /var/run/docker.sock
+
+            docker stop ${{ secrets.CONTAINER }}
+            docker rm ${{ secrets.CONTAINER }} 
+            docker rmi ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }} 
+            docker pull ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}:latest
+            docker run --name ${{ secrets.CONTAINER }} -d -p 3000:3000 ${{ secrets.DOCKER_USER }}/${{ secrets.IMAGE }}

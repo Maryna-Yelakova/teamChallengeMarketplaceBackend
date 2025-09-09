@@ -11,9 +11,7 @@ export class UnauthorizedExceptionFilter implements ExceptionFilter {
     const status = exception.getStatus();
     const resp = exception.getResponse();
     const message =
-      typeof resp === "object" && resp !== null && "message" in resp
-        ? resp.message
-        : exception.message;
+      typeof resp === "object" && "message" in resp ? resp.message : exception.message;
 
     response.status(status).json({
       statusCode: status,
