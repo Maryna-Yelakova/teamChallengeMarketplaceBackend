@@ -10,6 +10,14 @@ async function bootstrap() {
     logger: ["error", "warn", "log", "debug"]
   });
 
+  // Enable CORS
+  app.enableCors({
+    origin: true, // Allow all origins during development
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'Accept', 'Origin', 'X-Requested-With'],
+  });
+
   app.use(cookieParcer());
 
   app.useGlobalPipes(new ValidationPipe());
@@ -18,11 +26,41 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle("MarketPlace API")
-    .setDescription("API docs")
-    .addBearerAuth()
+    .setDescription("API documentation for MarketPlace Backend")
+    .setVersion("1.0")
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth'
+    )
+    .addServer('http://localhost:3000', 'Development server')
     .build();
+    
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("/docs", app, document);
+  SwaggerModule.setup("/docs", app, document, {
+    customSiteTitle: 'MarketPlace API Documentation',
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: 'none',
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      tryItOutEnabled: true,
+      requestInterceptor: (request) => {
+        request.headers['Access-Control-Allow-Origin'] = '*';
+        request.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
+        request.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+        return request;
+      },
+    },
+  });
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port, "::");

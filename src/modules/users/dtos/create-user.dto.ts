@@ -26,6 +26,7 @@ export class CreateUserDto {
   @Length(6, 20)
   password: string;
 
+  @ApiProperty({ required: false, description: "Whether user's phone is validated", example: false })
   @IsOptional()
   @IsBoolean()
   isPhoneValidated?: boolean;

@@ -7,24 +7,23 @@ import { Review } from "./review.entity";
 
 @Entity("products")
 export class Product {
+  @ApiProperty({ description: "Unique identifier", format: "uuid" })
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  // @ApiProperty({ description: "Seller of the product" })
   @ManyToOne(() => Seller, seller => seller.products)
   @JoinColumn({ name: "sellerId" })
   seller: Seller;
 
-  @ApiProperty({ description: "Unique identifier", format: "uuid" })
+  @ApiProperty({ description: "Seller ID", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" })
   @Column()
   sellerId: string;
 
-  @ApiProperty({ description: "Subcategory of the product" })
   @ManyToOne(() => Subcategory, subcategory => subcategory.products, { onDelete: "SET NULL" })
   @JoinColumn({ name: "subcategoryId" })
   subcategory: Subcategory;
 
-  @ApiProperty({ description: "Subcategory ID", format: "uuid" })
+  @ApiProperty({ description: "Subcategory ID", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" })
   @Column()
   subcategoryId: string;
 
