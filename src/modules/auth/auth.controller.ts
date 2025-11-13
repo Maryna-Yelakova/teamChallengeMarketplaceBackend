@@ -14,20 +14,17 @@ import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
 import { ChangePasswordDto } from "./dtos/change-password.dto";
 
-import { 
-  ApiBody, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBadRequestResponse, 
-  ApiCreatedResponse, 
-  ApiOkResponse, 
+import {
+  ApiBody,
+  ApiOperation,
+  // ApiResponse,
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiOkResponse,
   ApiUnauthorizedResponse,
   ApiBearerAuth,
-  ApiTags 
+  ApiTags
 } from "@nestjs/swagger";
-
-
-
 
 import type { Request, Response } from "express";
 import { RequestWithUser } from "../../common/types";
@@ -40,40 +37,47 @@ import { LoginUserDto } from "../users/dtos/login-user.dto";
 
 // import { LocalAuthGuard } from "./local-auth.guard";
 
-@ApiTags('Auth')
+@ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @ApiOperation({ summary: "Register new user" })
-  @ApiCreatedResponse({ 
-    description: 'User successfully registered',
+  @ApiCreatedResponse({
+    description: "User successfully registered",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
-        firstName: { type: 'string', example: 'Василь' },
-        email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
-        phone: { type: 'string', example: '+380991234567' },
-        isPhoneValidated: { type: 'boolean', example: false },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' }
+        id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
+        firstName: { type: "string", example: "Василь" },
+        email: { type: "string", example: "basilbasilyuk@mail.gov" },
+        phone: { type: "string", example: "+380991234567" },
+        isPhoneValidated: { type: "boolean", example: false },
+        createdAt: { type: "string", format: "date-time" },
+        updatedAt: { type: "string", format: "date-time" }
       }
     }
   })
   @ApiBadRequestResponse({
-    description: 'Validation error or user already exists',
+    description: "Validation error or user already exists",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { 
+        statusCode: { type: "number", example: 400 },
+        message: {
           oneOf: [
-            { type: 'string', example: 'User with this email already exists' },
-            { type: 'array', items: { type: 'string' }, example: ['email must be an email', 'password must be longer than or equal to 6 characters'] }
+            { type: "string", example: "User with this email already exists" },
+            {
+              type: "array",
+              items: { type: "string" },
+              example: [
+                "email must be an email",
+                "password must be longer than or equal to 6 characters"
+              ]
+            }
           ]
         },
-        error: { type: 'string', example: 'Bad Request' }
+        error: { type: "string", example: "Bad Request" }
       }
     }
   })
@@ -84,43 +88,43 @@ export class AuthController {
 
   @ApiOperation({ summary: "Login existing user" })
   @ApiOkResponse({
-    description: 'User successfully logged in',
+    description: "User successfully logged in",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
         user: {
-          type: 'object',
+          type: "object",
           properties: {
-            id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
-            firstName: { type: 'string', example: 'Василь' },
-            email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
-            phone: { type: 'string', example: '+380991234567' },
-            isPhoneValidated: { type: 'boolean', example: false }
+            id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
+            firstName: { type: "string", example: "Василь" },
+            email: { type: "string", example: "basilbasilyuk@mail.gov" },
+            phone: { type: "string", example: "+380991234567" },
+            isPhoneValidated: { type: "boolean", example: false }
           }
         },
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+        accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
       }
     }
   })
   @ApiUnauthorizedResponse({
-    description: 'Invalid credentials',
+    description: "Invalid credentials",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Invalid credentials' },
-        error: { type: 'string', example: 'Unauthorized' }
+        statusCode: { type: "number", example: 401 },
+        message: { type: "string", example: "Invalid credentials" },
+        error: { type: "string", example: "Unauthorized" }
       }
     }
   })
   @ApiBadRequestResponse({
-    description: 'Validation error',
+    description: "Validation error",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'array', items: { type: 'string' }, example: ['email must be an email'] },
-        error: { type: 'string', example: 'Bad Request' }
+        statusCode: { type: "number", example: 400 },
+        message: { type: "array", items: { type: "string" }, example: ["email must be an email"] },
+        error: { type: "string", example: "Bad Request" }
       }
     }
   })
@@ -134,7 +138,7 @@ export class AuthController {
 
   @ApiOperation({ summary: "Logout user" })
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth("JWT-auth")
   @UseGuards(JwtAuthGuard)
   @Post("logout")
   logout(@Res({ passthrough: true }) res: Response) {
@@ -143,26 +147,26 @@ export class AuthController {
 
   @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
   @ApiOkResponse({
-    description: 'Tokens successfully refreshed',
+    description: "Tokens successfully refreshed",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }
+        accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
       }
     }
   })
   @ApiUnauthorizedResponse({
-    description: 'Invalid refresh token',
+    description: "Invalid refresh token",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Invalid refresh token' },
-        error: { type: 'string', example: 'Unauthorized' }
+        statusCode: { type: "number", example: 401 },
+        message: { type: "string", example: "Invalid refresh token" },
+        error: { type: "string", example: "Unauthorized" }
       }
     }
   })
-  @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth("JWT-auth")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
@@ -181,42 +185,46 @@ export class AuthController {
     }
   })
   @ApiOkResponse({
-    description: 'Password successfully changed',
+    description: "Password successfully changed",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        message: { type: 'string', example: 'Password changed successfully' }
+        message: { type: "string", example: "Password changed successfully" }
       }
     }
   })
   @ApiBadRequestResponse({
-    description: 'Invalid current password or validation error',
+    description: "Invalid current password or validation error",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { 
+        statusCode: { type: "number", example: 400 },
+        message: {
           oneOf: [
-            { type: 'string', example: 'Current password is incorrect' },
-            { type: 'array', items: { type: 'string' }, example: ['newPassword must be longer than or equal to 6 characters'] }
+            { type: "string", example: "Current password is incorrect" },
+            {
+              type: "array",
+              items: { type: "string" },
+              example: ["newPassword must be longer than or equal to 6 characters"]
+            }
           ]
         },
-        error: { type: 'string', example: 'Bad Request' }
+        error: { type: "string", example: "Bad Request" }
       }
     }
   })
   @ApiUnauthorizedResponse({
-    description: 'User not authenticated',
+    description: "User not authenticated",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Unauthorized' },
-        error: { type: 'string', example: 'Unauthorized' }
+        statusCode: { type: "number", example: 401 },
+        message: { type: "string", example: "Unauthorized" },
+        error: { type: "string", example: "Unauthorized" }
       }
     }
   })
-  @ApiBearerAuth('JWT-auth')
+  @ApiBearerAuth("JWT-auth")
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
   @Patch("change-password")
