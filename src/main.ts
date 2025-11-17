@@ -1,14 +1,17 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { ValidationPipe } from "@nestjs/common";
+import { ConsoleLogger, ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import * as cookieParcer from "cookie-parser";
+import * as cookieParser from "cookie-parser";
 import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
+import { bearerAuthConfig, PORT, swaggerOptions } from "./constants/appConfig.constants";
+import { AppLoggerService } from "./modules/logger/logger.service";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ["error", "warn", "log", "debug"]
-  });
+  const app = await NestFactory.create(AppModule);
+
+  const appLogger = app.get(AppLoggerService);
+  app.useLogger(appLogger);
 
   // Enable CORS
   app.enableCors({
@@ -18,7 +21,7 @@ async function bootstrap() {
     // allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'Accept', 'Origin', 'X-Requested-With'],
   });
 
-  app.use(cookieParcer());
+  app.use(cookieParser());
 
   app.useGlobalPipes(new ValidationPipe());
 
@@ -29,14 +32,7 @@ async function bootstrap() {
     .setDescription("API documentation for MarketPlace Backend")
     .setVersion("1.0")
     .addBearerAuth(
-      {
-        type: "http",
-        scheme: "bearer",
-        bearerFormat: "JWT",
-        name: "JWT",
-        description: "Enter JWT token",
-        in: "header"
-      },
+      bearerAuthConfig,
       "JWT-auth"
     )
     // .addServer('http://localhost:3000', 'Development server')
@@ -45,26 +41,12 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("/docs", app, document, {
     customSiteTitle: "MarketPlace API Documentation",
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      docExpansion: "none",
-      filter: true,
-      showExtensions: true,
-      showCommonExtensions: true,
-      tryItOutEnabled: true
-      // requestInterceptor: (request) => {
-      //   request.headers['Access-Control-Allow-Origin'] = '*';
-      //   request.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
-      //   request.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
-      //   return request;
-      // },
-    }
+    swaggerOptions
   });
 
-  const port = process.env.PORT ?? 3000;
-  await app.listen(port, "::");
-  return port;
+
+  await app.listen(PORT, "::");
+  return PORT;
 }
 bootstrap()
   .then(port => console.log(`App successfully started on port ${port} !`))
