@@ -10,6 +10,9 @@ import { ProductsModule } from "./modules/products/products.module";
 import { CategoriesModule } from "./modules/categories/categories.module";
 import { SubcategoriesModule } from "./modules/subcategories/subcategories.module";
 import { OtpModule } from "./modules/otp/otp.module";
+import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
+import { APP_FILTER } from "@nestjs/core";
+import { LoggerModule } from "./modules/logger/logger.module";
 
 
 @Module({
@@ -27,9 +30,13 @@ import { OtpModule } from "./modules/otp/otp.module";
     ProductsModule,
     CategoriesModule,
     SubcategoriesModule,
-    OtpModule
+    OtpModule,
+    LoggerModule
   ],
   controllers: [AppController],
-  providers: [AppService]
+  providers: [AppService, {
+    provide: APP_FILTER,
+    useClass: AllExceptionsFilter,
+  }]
 })
 export class AppModule {}
