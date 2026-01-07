@@ -6,9 +6,9 @@ export class OtpStore {
   private data = new Map<string, Rec>();
   private hash(code: string) { return crypto.createHash('sha256').update(code).digest('hex'); }
 
-  set(phone: string, code: string, ttlSec = 300) {
+  set(identifier: string, code: string, ttlSec = 300) {
     const day = new Date().toISOString().slice(0,10);
-    const rec = this.data.get(phone);
+    const rec = this.data.get(identifier);
     const base: Rec = rec ?? { hash:'', expiresAt:0, resendAt:0, attempts:0, sentToday:0, day };
     if (base.day !== day) { base.sentToday = 0; base.day = day; }
     base.hash = this.hash(code);
@@ -16,11 +16,11 @@ export class OtpStore {
     base.resendAt = Date.now() + 60*1000; // антиспам: 60с між повторними відправками
     base.attempts = 0;
     base.sentToday += 1;
-    this.data.set(phone, base);
+    this.data.set(identifier, base);
   }
 
-  canSend(phone: string) {
-    const rec = this.data.get(phone);
+  canSend(identifier: string) {
+    const rec = this.data.get(identifier);
     const day = new Date().toISOString().slice(0,10);
     if (!rec) return { ok: true };
     const limitPerDay = 5;
@@ -30,14 +30,14 @@ export class OtpStore {
     return { ok: true };
   }
 
-  verify(phone: string, code: string) {
-    const rec = this.data.get(phone);
+  verify(identifier: string, code: string) {
+    const rec = this.data.get(identifier);
     if (!rec) return { ok: false, reason: 'No code' };
     if (Date.now() > rec.expiresAt) return { ok: false, reason: 'Expired' };
     rec.attempts += 1;
     if (rec.attempts > 5) return { ok: false, reason: 'Too many attempts' };
     const match = rec.hash === this.hash(code);
-    if (match) this.data.delete(phone);
+    if (match) this.data.delete(identifier);
     return { ok: match, reason: match ? undefined : 'Wrong code' };
   }
 }

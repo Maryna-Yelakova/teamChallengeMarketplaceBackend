@@ -107,13 +107,23 @@ export class AuthController {
     }
   })
   @ApiUnauthorizedResponse({
-    description: "Invalid credentials",
-    schema: {
-      type: "object",
-      properties: {
-        statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Invalid credentials" },
-        error: { type: "string", example: "Unauthorized" }
+    description: "Invalid credentials or unverified phone/email",
+    content: {
+      "application/json": {
+        examples: {
+          invalidCredentials: {
+            summary: "Invalid credentials",
+            value: { statusCode: 401, message: "Invalid credentials", error: "Unauthorized" }
+          },
+          phoneNotVerified: {
+            summary: "Phone not verified",
+            value: { statusCode: 401, message: "Please verify your phone number first", error: "Unauthorized" }
+          },
+          emailNotVerified: {
+            summary: "Email not verified",
+            value: { statusCode: 401, message: "Please verify your email first", error: "Unauthorized" }
+          }
+        }
       }
     }
   })

@@ -1,6 +1,7 @@
 
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
 import { SmsProvider, SMS_PROVIDER } from '../sms/sms.provider';
+import { EmailProvider, EMAIL_PROVIDER } from '../email/email.provider';
 import { OtpStore } from './otp.store';
 import { UsersService } from '../users/users.service';
 
@@ -8,6 +9,7 @@ import { UsersService } from '../users/users.service';
 export class OtpService {
   constructor(
     @Inject(SMS_PROVIDER) private sms: SmsProvider,
+    @Inject(EMAIL_PROVIDER) private email: EmailProvider,
     private store: OtpStore,
     private usersService: UsersService,
   ) {}
@@ -57,6 +59,46 @@ export class OtpService {
     const user = await this.usersService.findByPhone(phone);
     if (user && !user.isPhoneValidated) {
       await this.usersService.update(user.id, { isPhoneValidated: true });
+    }
+  }
+
+  async sendEmail(email: string) {
+    const ok = this.store.canSend(email);
+    if (!ok.ok) {
+      throw new BadRequestException(ok.reason);
+    }
+
+    const code =
+      process.env.NODE_ENV === 'development' ? '000000' : this.genCode();
+
+    this.store.set(email, code);
+    await this.email.sendOtp(email, code);
+
+    return {
+      ok: true,
+      devHint: process.env.NODE_ENV === 'development' ? code : undefined,
+    };
+  }
+
+  async verifyEmail(email: string, code: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (user?.isEmailValideted) {
+      return { ok: false, reason: 'Email already verified' };
+    }
+
+    const res = this.store.verify(email, code);
+
+    if (!res.ok && res.reason === 'No code') {
+      return { ok: false, reason: 'Code not found (expired or not requested)' };
+    }
+
+    return res;
+  }
+
+  async markEmailAsValidated(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (user && !user.isEmailValideted) {
+      await this.usersService.update(user.id, { isEmailValideted: true });
     }
   }
 }
