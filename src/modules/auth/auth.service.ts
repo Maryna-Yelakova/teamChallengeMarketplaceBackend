@@ -29,7 +29,9 @@ export class AuthService {
     this.JWT_REFRESH_TOKEN_TTL = configService.getOrThrow<string>("JWT_REFRESH_TOKEN_TTL");
   }
 
-  async register(res: Response, dto: CreateUserDto) {
+  async register ( res: Response, dto: CreateUserDto )
+  {
+    const isSeller = dto.isSeller === true;
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) throw new ConflictException("Email already in use");
 
@@ -39,9 +41,12 @@ export class AuthService {
     const hash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.usersService.create({
-      ...dto,
+      firstName: dto.firstName,
+      phone: dto.phone,
+      email: dto.email,
       password: hash,
-      isPhoneValidated: false
+      isPhoneValidated: false,
+      isSeller
     });
 
     console.log(user);

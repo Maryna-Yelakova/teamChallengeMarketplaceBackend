@@ -6,7 +6,10 @@ import { UpdateUsersDto } from "./dtos/update-user.dto";
 
 import { BadRequestException } from "@nestjs/common";
 
-import { CreateUserDto } from "./dtos/create-user.dto";
+type CreateUserData = Pick<User, "firstName" | "phone" | "email" | "password"> &
+  Partial<
+    Pick<User, "middleName" | "lastName" | "birthDay" | "isPhoneValidated" | "isEmailValideted" | "isSeller">
+  >;
 
 @Injectable()
 export class UsersService {
@@ -15,13 +18,13 @@ export class UsersService {
     private usersRepo: Repository<User>
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersRepo.findOne({ where: { email: createUserDto.email } });
+  async create(createUserData: CreateUserData) {
+    const existingUser = await this.usersRepo.findOne({ where: { email: createUserData.email } });
     if (existingUser) {
       throw new BadRequestException("User with this email already exists");
     }
 
-    const user = this.usersRepo.create(createUserDto);
+    const user = this.usersRepo.create(createUserData);
     return await this.usersRepo.save(user);
   }
 
