@@ -23,7 +23,7 @@ export class Seller {
   user: User;
 
   @ApiProperty({ description: "User ID of the seller", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" })
-  @Column()
+  @Column({ unique: true })
   userId: string;
 
   @ApiProperty({ description: "Name of the shop", example: "My Amazing Shop" })

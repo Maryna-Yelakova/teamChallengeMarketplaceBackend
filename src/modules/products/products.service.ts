@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { Product } from "../../entities/product.entity";
@@ -20,9 +20,8 @@ export class ProductsService {
     private readonly subcategoriesService: SubcategoriesService
   ) {}
 
-  async create({ sellerId, subcategoryId, ...rest }: CreateProductDto) {
-    const seller: Seller | null = await this.sellersService.findOne(sellerId);
-    if (!seller) throw new NotFoundException("Seller not found");
+  async create(userId: string, { sellerId, subcategoryId, ...rest }: CreateProductDto) {
+    const seller = await this.assertSellerOwnership(sellerId, userId);
 
     const subcategory = await this.subcategoriesService.findOne(subcategoryId);
     if (!subcategory) throw new NotFoundException("Subcategory not found");
@@ -49,21 +48,42 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(id: string, userId: string, updateProductDto: UpdateProductDto): Promise<Product> {
     const product = await this.findOne(id);
+    await this.assertSellerOwnership(product.sellerId, userId);
 
-    if (!product) {
-      throw new NotFoundException(`Product with ID "${id}" not found`);
+    const { sellerId, subcategoryId, ...rest } = updateProductDto;
+
+    if (sellerId && sellerId !== product.sellerId) {
+      const nextSeller = await this.assertSellerOwnership(sellerId, userId);
+      product.seller = nextSeller;
+      product.sellerId = nextSeller.id;
     }
 
-    // Оновлюємо тільки передані поля
-    Object.assign(product, updateProductDto);
+    if (subcategoryId) {
+      const subcategory = await this.subcategoriesService.findOne(subcategoryId);
+      if (!subcategory) throw new NotFoundException("Subcategory not found");
+      product.subcategory = subcategory;
+      product.subcategoryId = subcategory.id;
+    }
+
+    Object.assign(product, rest);
 
     return this.productsRepo.save(product);
   }
 
-  async remove(id: string) {
-    const result = await this.productsRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException("Product not found");
+  async remove(id: string, userId: string) {
+    const product = await this.findOne(id);
+    await this.assertSellerOwnership(product.sellerId, userId);
+    await this.productsRepo.delete(id);
+  }
+
+  private async assertSellerOwnership(sellerId: string, userId: string): Promise<Seller> {
+    const seller = await this.sellersService.findOne(sellerId);
+    if (!seller) throw new NotFoundException("Seller not found");
+    if (seller.userId !== userId) {
+      throw new ForbiddenException("You can manage products only in your own shop");
+    }
+    return seller;
   }
 }

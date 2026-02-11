@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Body, Req, UseGuards } from "@nestjs/common";
 import { SellersService } from "./sellers.service";
 import { CreateSellerDto } from "./dto/create-seller.dto";
 import { UpdateSellerDto } from "./dto/update-seller.dto";
 import { Seller } from "../../entities/seller.entity";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequestWithUser } from "../../common/types";
 import { 
   ApiOperation, 
   ApiTags,
@@ -11,7 +13,9 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
   ApiParam,
-  ApiNoContentResponse
+  ApiNoContentResponse,
+  ApiBearerAuth,
+  ApiForbiddenResponse
 } from "@nestjs/swagger";
 
 @ApiTags('Sellers')
@@ -34,15 +38,17 @@ export class SellersController {
         message: { 
           oneOf: [
             { type: 'string', example: 'Shop name already exists' },
-            { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty', 'userId must be a UUID'] }
+            { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty'] }
           ]
         },
         error: { type: 'string', example: 'Bad Request' }
       }
     }
   })
-  create(@Body() createSellerDto: CreateSellerDto) {
-    return this.sellersService.create(createSellerDto);
+  @ApiBearerAuth("JWT-auth")
+  @UseGuards(JwtAuthGuard)
+  create(@Req() req: RequestWithUser, @Body() createSellerDto: CreateSellerDto) {
+    return this.sellersService.create(req.user.userId, createSellerDto);
   }
 
   @Get("/:id")
@@ -108,8 +114,11 @@ export class SellersController {
     format: 'uuid',
     example: '181fe998-8066-41e1-989b-71cd9a085a55'
   })
-  update(@Param("id") id: string, @Body() updateSellerDto: UpdateSellerDto) {
-    return this.sellersService.update(id, updateSellerDto);
+  @ApiBearerAuth("JWT-auth")
+  @ApiForbiddenResponse({ description: "You can update only your own seller profile" })
+  @UseGuards(JwtAuthGuard)
+  update(@Req() req: RequestWithUser, @Param("id") id: string, @Body() updateSellerDto: UpdateSellerDto) {
+    return this.sellersService.update(id, req.user.userId, updateSellerDto);
   }
 
   @Delete(":id")
@@ -135,7 +144,11 @@ export class SellersController {
     format: 'uuid',
     example: '181fe998-8066-41e1-989b-71cd9a085a55'
   })
-  remove(@Param("id") id: string) {
-    return this.sellersService.remove(id);
+  @ApiBearerAuth("JWT-auth")
+  @ApiForbiddenResponse({ description: "You can delete only your own seller profile" })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  remove(@Req() req: RequestWithUser, @Param("id") id: string) {
+    return this.sellersService.remove(id, req.user.userId);
   }
 }
