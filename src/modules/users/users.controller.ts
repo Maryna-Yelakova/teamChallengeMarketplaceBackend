@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -7,6 +8,7 @@ import {
   NotFoundException,
   Param,
   Patch,
+  Query,
   Req,
   UseGuards
 } from "@nestjs/common";
@@ -18,6 +20,7 @@ import {
   ApiBearerAuth, 
   ApiOperation, 
   ApiParam, 
+  ApiQuery,
   ApiTags,
   ApiOkResponse,
   ApiNotFoundResponse,
@@ -93,27 +96,35 @@ export class UsersController {
 
   @Get("iep")
   @ApiOperation({ summary: "Is email present?" })
-  @ApiParam({
+  @ApiQuery({
     name: "email",
     description: "The user's email",
     type: String,
+    required: true,
     example: "myemail@mail.com"
   })
-  async isEmailPresent(@Param("email") email: string) {
+  async isEmailPresent(@Query("email") email: string) {
+    if (!email) {
+      throw new BadRequestException("Query parameter 'email' is required");
+    }
     const user = await this.UsersService.findByEmail(email);
     return { isPresent: !!user };
   }
 
   @Get("ipp")
   @ApiOperation({ summary: "Is phone present?" })
-  @ApiParam({
+  @ApiQuery({
     name: "phone",
     description: "The user's phone number",
     type: String,
+    required: true,
     example: "+380501234567"
   })
-  async isPhonePresent(@Param("phone") phone: string) {
-    const user = await this.UsersService.findByEmail(phone);
+  async isPhonePresent(@Query("phone") phone: string) {
+    if (!phone) {
+      throw new BadRequestException("Query parameter 'phone' is required");
+    }
+    const user = await this.UsersService.findByPhone(phone);
     return { isPresent: !!user };
   }
 
