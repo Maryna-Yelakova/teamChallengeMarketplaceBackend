@@ -2,16 +2,19 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
   Patch,
+  Req,
   UseGuards
 } from "@nestjs/common";
 import { UsersService } from "./users.service";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 import { ChangePhoneDto } from "./dtos/change-phone.dto";
 import { 
+  ApiBody,
   ApiBearerAuth, 
   ApiOperation, 
   ApiParam, 
@@ -22,6 +25,8 @@ import {
   ApiUnauthorizedResponse
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequestWithUser } from "../../common/types";
+import { UpgradeToSellerDto } from "./dtos/upgrade-to-seller.dto";
 
 @ApiTags('Users')
 @Controller("users")
@@ -153,8 +158,94 @@ export class UsersController {
   })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
-  async delete(@Param("id") id: string) {
+  async delete(@Req() req: RequestWithUser, @Param("id") id: string) {
+    if (req.user.userId !== id) {
+      throw new ForbiddenException("You can only manage your own account");
+    }
     await this.UsersService.delete(id);
+  }
+
+  @Patch("become-seller")
+  @ApiOperation({ summary: "Upgrade current user account to seller" })
+  @ApiBody({ type: UpgradeToSellerDto })
+  @ApiOkResponse({
+    description: "Account upgraded to seller successfully",
+    schema: {
+      type: "object",
+      properties: {
+        message: { type: "string", example: "Account upgraded to seller" },
+        user: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
+            firstName: { type: "string", example: "Василь" },
+            email: { type: "string", example: "basilbasilyuk@mail.gov" },
+            phone: { type: "string", example: "+380991234567" },
+            isSeller: { type: "boolean", example: true }
+          }
+        },
+        seller: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
+            userId: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
+            shopName: { type: "string", example: "My Amazing Shop" },
+            legalAddress: { type: "string", nullable: true, example: "123 Main St, Kiev, Ukraine" },
+            taxId: { type: "string", nullable: true, example: "12345678901" },
+            phone: { type: "string", nullable: true, example: "+380991234567" },
+            description: { type: "string", nullable: true, example: "We sell quality products" },
+            createdAt: { type: "string", format: "date-time" }
+          }
+        }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: "User is already a seller or validation error",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 400 },
+        message: {
+          oneOf: [
+            { type: "string", example: "User is already a seller" },
+            {
+              type: "array",
+              items: { type: "string" },
+              example: ["shopName should not be empty"]
+            }
+          ]
+        },
+        error: { type: "string", example: "Bad Request" }
+      }
+    }
+  })
+  @ApiNotFoundResponse({
+    description: "User not found",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 404 },
+        message: { type: "string", example: "User not found" },
+        error: { type: "string", example: "Not Found" }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: "User not authenticated",
+    schema: {
+      type: "object",
+      properties: {
+        statusCode: { type: "number", example: 401 },
+        message: { type: "string", example: "Unauthorized" },
+        error: { type: "string", example: "Unauthorized" }
+      }
+    }
+  })
+  @ApiBearerAuth("JWT-auth")
+  @UseGuards(JwtAuthGuard)
+  async becomeSeller(@Req() req: RequestWithUser, @Body() dto: UpgradeToSellerDto) {
+    return await this.UsersService.upgradeToSeller(req.user.userId, dto);
   }
 
   @Patch(":id")
@@ -215,7 +306,10 @@ export class UsersController {
   })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
-  async updateUser(@Param("id") id: string, @Body() updateUserDto: UpdateUsersDto) {
+  async updateUser(@Req() req: RequestWithUser, @Param("id") id: string, @Body() updateUserDto: UpdateUsersDto) {
+    if (req.user.userId !== id) {
+      throw new ForbiddenException("You can only manage your own account");
+    }
     return await this.UsersService.update(id, updateUserDto);
   }
 
@@ -277,7 +371,11 @@ export class UsersController {
   })
   @ApiBearerAuth('JWT-auth')
   @UseGuards(JwtAuthGuard)
-  async changePhone(@Param("id") id: string, @Body() changePhoneDto: ChangePhoneDto) {
+  async changePhone(@Req() req: RequestWithUser, @Param("id") id: string, @Body() changePhoneDto: ChangePhoneDto) {
+    if (req.user.userId !== id) {
+      throw new ForbiddenException("You can only manage your own account");
+    }
+
     const user = await this.UsersService.findById(id);
     if (!user) {
       throw new NotFoundException("User not found");

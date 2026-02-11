@@ -31,12 +31,34 @@ export class AuthService {
 
   async register ( res: Response, dto: CreateUserDto )
   {
+    const isDev = process.env.NODE_ENV === "development";
     const isSeller = dto.isSeller === true;
+
     const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) throw new ConflictException("Email already in use");
+    if (existing) {
+      throw new ConflictException(
+        isDev
+          ? {
+            message: "Email already in use",
+            reason: "EMAIL_ALREADY_IN_USE",
+            field: "email"
+          }
+          : "Email already in use"
+      );
+    }
 
     const existingPhone = await this.usersService.findByPhone(dto.phone);
-    if (existingPhone) throw new ConflictException("Phone number already in use");
+    if (existingPhone) {
+      throw new ConflictException(
+        isDev
+          ? {
+            message: "Phone number already in use",
+            reason: "PHONE_ALREADY_IN_USE",
+            field: "phone"
+          }
+          : "Phone number already in use"
+      );
+    }
 
     const hash = await bcrypt.hash(dto.password, 10);
 

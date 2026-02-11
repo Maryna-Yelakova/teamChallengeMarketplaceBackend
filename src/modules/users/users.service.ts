@@ -1,10 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "../../entities/user.entity";
+import { Seller } from "../../entities/seller.entity";
 import { Repository } from "typeorm";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
-
-import { BadRequestException } from "@nestjs/common";
+import { UpgradeToSellerDto } from "./dtos/upgrade-to-seller.dto";
 
 type CreateUserData = Pick<User, "firstName" | "phone" | "email" | "password"> &
   Partial<
@@ -15,7 +15,9 @@ type CreateUserData = Pick<User, "firstName" | "phone" | "email" | "password"> &
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepo: Repository<User>
+    private usersRepo: Repository<User>,
+    @InjectRepository(Seller)
+    private sellersRepo: Repository<Seller>
   ) {}
 
   async create(createUserData: CreateUserData) {
@@ -66,5 +68,43 @@ export class UsersService {
     user.isPhoneValidated = false;
     
     return await this.usersRepo.save(user);
+  }
+
+  async upgradeToSeller(userId: string, dto: UpgradeToSellerDto) {
+    return this.usersRepo.manager.transaction(async manager => {
+      const usersRepo = manager.getRepository(User);
+      const sellersRepo = manager.getRepository(Seller);
+
+      const user = await usersRepo.findOne({ where: { id: userId } });
+      if (!user) {
+        throw new NotFoundException("User not found");
+      }
+
+      const existingSeller = await sellersRepo.findOne({ where: { userId } });
+      if (user.isSeller || existingSeller) {
+        throw new BadRequestException("User is already a seller");
+      }
+
+      const seller = sellersRepo.create({
+        userId,
+        shopName: dto.shopName,
+        legalAddress: dto.legalAddress,
+        taxId: dto.taxId,
+        phone: dto.phone,
+        description: dto.description
+      });
+      const savedSeller = await sellersRepo.save(seller);
+
+      user.isSeller = true;
+      const updatedUser = await usersRepo.save(user);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...safeUser } = updatedUser;
+
+      return {
+        message: "Account upgraded to seller",
+        user: safeUser,
+        seller: savedSeller
+      };
+    });
   }
 }

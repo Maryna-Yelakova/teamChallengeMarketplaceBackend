@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from "@nestjs/common";
 import { SellersService } from "./sellers.service";
 import { CreateSellerDto } from "./dto/create-seller.dto";
 import { UpdateSellerDto } from "./dto/update-seller.dto";
 import { Seller } from "../../entities/seller.entity";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RequestWithUser } from "../../common/types";
 import { 
   ApiOperation, 
   ApiTags,
@@ -11,7 +13,8 @@ import {
   ApiNotFoundResponse,
   ApiBadRequestResponse,
   ApiParam,
-  ApiNoContentResponse
+  ApiNoContentResponse,
+  ApiBearerAuth
 } from "@nestjs/swagger";
 
 @ApiTags('Sellers')
@@ -34,15 +37,17 @@ export class SellersController {
         message: { 
           oneOf: [
             { type: 'string', example: 'Shop name already exists' },
-            { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty', 'userId must be a UUID'] }
+            { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty'] }
           ]
         },
         error: { type: 'string', example: 'Bad Request' }
       }
     }
   })
-  create(@Body() createSellerDto: CreateSellerDto) {
-    return this.sellersService.create(createSellerDto);
+  @ApiBearerAuth("JWT-auth")
+  @UseGuards(JwtAuthGuard)
+  create(@Req() req: RequestWithUser, @Body() createSellerDto: CreateSellerDto) {
+    return this.sellersService.create(req.user.userId, createSellerDto);
   }
 
   @Get("/:id")
