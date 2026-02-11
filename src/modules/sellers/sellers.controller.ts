@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, UseGuards } from "@nestjs/common";
+import { Controller, Delete, Get, HttpCode, Param, Patch, Post, Body, Req, UseGuards } from "@nestjs/common";
 import { SellersService } from "./sellers.service";
 import { CreateSellerDto } from "./dto/create-seller.dto";
 import { UpdateSellerDto } from "./dto/update-seller.dto";
@@ -14,7 +14,8 @@ import {
   ApiBadRequestResponse,
   ApiParam,
   ApiNoContentResponse,
-  ApiBearerAuth
+  ApiBearerAuth,
+  ApiForbiddenResponse
 } from "@nestjs/swagger";
 
 @ApiTags('Sellers')
@@ -113,8 +114,11 @@ export class SellersController {
     format: 'uuid',
     example: '181fe998-8066-41e1-989b-71cd9a085a55'
   })
-  update(@Param("id") id: string, @Body() updateSellerDto: UpdateSellerDto) {
-    return this.sellersService.update(id, updateSellerDto);
+  @ApiBearerAuth("JWT-auth")
+  @ApiForbiddenResponse({ description: "You can update only your own seller profile" })
+  @UseGuards(JwtAuthGuard)
+  update(@Req() req: RequestWithUser, @Param("id") id: string, @Body() updateSellerDto: UpdateSellerDto) {
+    return this.sellersService.update(id, req.user.userId, updateSellerDto);
   }
 
   @Delete(":id")
@@ -140,7 +144,11 @@ export class SellersController {
     format: 'uuid',
     example: '181fe998-8066-41e1-989b-71cd9a085a55'
   })
-  remove(@Param("id") id: string) {
-    return this.sellersService.remove(id);
+  @ApiBearerAuth("JWT-auth")
+  @ApiForbiddenResponse({ description: "You can delete only your own seller profile" })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  remove(@Req() req: RequestWithUser, @Param("id") id: string) {
+    return this.sellersService.remove(id, req.user.userId);
   }
 }
