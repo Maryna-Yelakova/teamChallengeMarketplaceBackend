@@ -44,7 +44,7 @@
     "rxjs": "^7.8.1",
     "twilio": "^5.8.0",
     "typeorm": "^0.3.24",
-    "winston": "^3.18.3",
+    "winston": "^3.19.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {

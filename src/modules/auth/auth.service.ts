@@ -58,6 +58,10 @@ export class AuthService {
       throw new UnauthorizedException("Please verify your phone number first");
     }
 
+    if (!fullUser?.isEmailValideted) {
+      throw new UnauthorizedException("Please verify your email first");
+    }
+
     return this.auth(res, user.id);
   }
 

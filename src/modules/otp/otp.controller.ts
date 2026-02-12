@@ -16,6 +16,8 @@ import {
 
 import { SendOtpDto } from './dtos/send-otp.dto';
 import { VerifyOtpDto } from './dtos/verify-otp.dto';
+import { SendEmailOtpDto } from './dtos/send-email-otp.dto';
+import { VerifyEmailOtpDto } from './dtos/verify-email-otp.dto';
 import { SendOtpResponseDto } from './dtos/send-otp.response';
 import { VerifyOtpResponseDto } from './dtos/verify-otp.response';
 import { OtpService } from './otp.service';
@@ -136,6 +138,84 @@ export class OtpController {
     const res = await this.otp.verify(dto.phone, dto.code);
     if (!res.ok) return { ok: false, reason: res.reason };
     await this.otp.markPhoneAsValidated(dto.phone);
+    return { ok: true };
+  }
+
+  @Post('email/send')
+  @ApiOperation({ summary: 'Send OTP to email', operationId: 'sendEmailOtp' })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/json')
+  @ApiBody({ type: SendEmailOtpDto })
+  @ApiCreatedResponse({
+    description: 'OTP successfully sent to email',
+    content: {
+      'application/json': {
+        schema: { $ref: getSchemaPath(SendOtpResponseDto) },
+        examples: {
+          dev: { value: { ok: true, devHint: '000000' } },
+          prod: { value: { ok: true, message: 'OTP sent to user@example.com' } },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid email or other request error',
+    content: {
+      'application/json': {
+        examples: {
+          badEmail: {
+            value: { statusCode: 400, message: 'Must be a valid email address', error: 'Bad Request' },
+          },
+          limit: {
+            value: { statusCode: 400, message: 'Too many requests, try later', error: 'Bad Request' },
+          },
+        },
+      },
+    },
+  })
+  sendEmail(@Body() dto: SendEmailOtpDto) {
+    return this.otp.sendEmail(dto.email);
+  }
+
+  @Post('email/verify')
+  @ApiOperation({ summary: 'Verify OTP code for email', operationId: 'verifyEmailOtp' })
+  @ApiConsumes('application/json')
+  @ApiProduces('application/json')
+  @ApiBody({ type: VerifyEmailOtpDto })
+  @HttpCode(200)
+  @ApiOkResponse({
+    description: 'Email OTP verification result',
+    content: {
+      'application/json': {
+        schema: { $ref: getSchemaPath(VerifyOtpResponseDto) },
+        examples: {
+          success: { value: { ok: true } },
+          alreadyVerified: { value: { ok: false, reason: 'Email already verified' } },
+          invalid: { value: { ok: false, reason: 'Invalid code' } },
+          expired: { value: { ok: false, reason: 'Code not found (expired or not requested)' } },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error (DTO) or business logic error',
+    content: {
+      'application/json': {
+        examples: {
+          badEmail: {
+            value: { statusCode: 400, message: 'Must be a valid email address', error: 'Bad Request' },
+          },
+          badCode: {
+            value: { statusCode: 400, message: ['code must be 6 characters'], error: 'Bad Request' },
+          },
+        },
+      },
+    },
+  })
+  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
+    const res = await this.otp.verifyEmail(dto.email, dto.code);
+    if (!res.ok) return { ok: false, reason: res.reason };
+    await this.otp.markEmailAsValidated(dto.email);
     return { ok: true };
   }
 }

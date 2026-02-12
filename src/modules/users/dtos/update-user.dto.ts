@@ -42,4 +42,9 @@ export class UpdateUsersDto {
   @IsOptional()
   @IsBoolean()
   isPhoneValidated?: boolean;
+
+  @ApiPropertyOptional({ description: "Whether user's email is validated", example: false })
+  @IsOptional()
+  @IsBoolean()
+  isEmailValideted?: boolean;
 }
