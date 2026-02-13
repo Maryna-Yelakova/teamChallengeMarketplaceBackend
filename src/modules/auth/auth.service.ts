@@ -54,15 +54,19 @@ export class AuthService {
     if (!user) throw new UnauthorizedException();
 
     const fullUser = await this.usersService.findById(user.id);
-    if (!fullUser?.isPhoneValidated) {
-      throw new UnauthorizedException("Please verify your phone number first");
-    }
+    // if (!fullUser?.isPhoneValidated) {
+    //   throw new UnauthorizedException("Please verify your phone number first");
+    // }
 
-    if (!fullUser?.isEmailValideted) {
-      throw new UnauthorizedException("Please verify your email first");
-    }
+    // if (!fullUser?.isEmailValideted) {
+    //   throw new UnauthorizedException("Please verify your email first");
+    // }
 
-    return this.auth(res, user.id);
+    return {
+      isPhoneValidated: fullUser?.isPhoneValidated,
+      isEmailValideted: fullUser?.isEmailValideted,
+      accessToken: this.auth(res, user.id)
+    };
   }
 
   logout(res: Response) {

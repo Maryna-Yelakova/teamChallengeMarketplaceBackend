@@ -92,16 +92,8 @@ export class AuthController {
     schema: {
       type: "object",
       properties: {
-        user: {
-          type: "object",
-          properties: {
-            id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
-            firstName: { type: "string", example: "Василь" },
-            email: { type: "string", example: "basilbasilyuk@mail.gov" },
-            phone: { type: "string", example: "+380991234567" },
-            isPhoneValidated: { type: "boolean", example: false }
-          }
-        },
+        isPhoneValidated: { type: "boolean", example: false },
+        isEmailValideted: { type: "boolean", example: false },
         accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
       }
     }
@@ -117,11 +109,19 @@ export class AuthController {
           },
           phoneNotVerified: {
             summary: "Phone not verified",
-            value: { statusCode: 401, message: "Please verify your phone number first", error: "Unauthorized" }
+            value: {
+              statusCode: 401,
+              message: "Please verify your phone number first",
+              error: "Unauthorized"
+            }
           },
           emailNotVerified: {
             summary: "Email not verified",
-            value: { statusCode: 401, message: "Please verify your email first", error: "Unauthorized" }
+            value: {
+              statusCode: 401,
+              message: "Please verify your email first",
+              error: "Unauthorized"
+            }
           }
         }
       }
