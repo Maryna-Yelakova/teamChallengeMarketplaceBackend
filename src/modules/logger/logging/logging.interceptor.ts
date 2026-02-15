@@ -11,7 +11,7 @@ import { AppLoggerService } from '../logger.service';
 export class LoggingInterceptor implements NestInterceptor {
   constructor(private logger: AppLoggerService) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
     const { method, url, body, query, headers } = req;
     const start = Date.now();

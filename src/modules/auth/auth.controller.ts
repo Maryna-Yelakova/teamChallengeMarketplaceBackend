@@ -52,7 +52,7 @@ export class AuthController {
         firstName: { type: "string", example: "Василь" },
         email: { type: "string", example: "basilbasilyuk@mail.gov" },
         phone: { type: "string", example: "+380991234567" },
-        isPhoneValidated: { type: "boolean", example: false },
+        isSeller: { type: "boolean", example: false },
         createdAt: { type: "string", format: "date-time" },
         updatedAt: { type: "string", format: "date-time" }
       }
