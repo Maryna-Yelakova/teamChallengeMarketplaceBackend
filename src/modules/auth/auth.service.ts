@@ -40,8 +40,7 @@ export class AuthService {
 
     const user = await this.usersService.create({
       ...dto,
-      password: hash,
-      isPhoneValidated: false
+      password: hash
     });
 
     console.log(user);
