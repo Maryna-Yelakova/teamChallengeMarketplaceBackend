@@ -1,9 +1,8 @@
-
-import { Injectable, Inject, BadRequestException } from '@nestjs/common';
-import { SmsProvider, SMS_PROVIDER } from '../sms/sms.provider';
-import { EmailProvider, EMAIL_PROVIDER } from '../email/email.provider';
-import { OtpStore } from './otp.store';
-import { UsersService } from '../users/users.service';
+import { Injectable, Inject, BadRequestException } from "@nestjs/common";
+import { SmsProvider, SMS_PROVIDER } from "../sms/sms.provider";
+import { EmailProvider, EMAIL_PROVIDER } from "../email/email.provider";
+import { OtpStore } from "./otp.store";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class OtpService {
@@ -11,7 +10,7 @@ export class OtpService {
     @Inject(SMS_PROVIDER) private sms: SmsProvider,
     @Inject(EMAIL_PROVIDER) private email: EmailProvider,
     private store: OtpStore,
-    private usersService: UsersService,
+    private usersService: UsersService
   ) {}
 
   private genCode() {
@@ -25,15 +24,14 @@ export class OtpService {
       throw new BadRequestException(ok.reason);
     }
 
-    const code =
-      process.env.NODE_ENV === 'development' ? '000000' : this.genCode();
+    const code = process.env.NODE_ENV === "development" ? "000000" : this.genCode();
 
     this.store.set(phone, code);
     await this.sms.sendOtp(phone, code);
 
     return {
       ok: true,
-      devHint: process.env.NODE_ENV === 'development' ? code : undefined,
+      devHint: process.env.NODE_ENV === "development" ? code : undefined
     };
   }
 
@@ -41,15 +39,15 @@ export class OtpService {
     // ⬇️ 1) якщо телефон уже підтверджений — повертаємо коректну reason
     const user = await this.usersService.findByPhone(phone);
     if (user?.isPhoneValidated) {
-      return { ok: false, reason: 'Phone already verified' };
+      return { ok: false, reason: "Phone already verified" };
     }
 
     // ⬇️ 2) стандартна перевірка з тимчасового сховища
     const res = this.store.verify(phone, code);
 
     // ⬇️ 3) (опційно) робимо reason більш зрозумілою, ніж "No code"
-    if (!res.ok && res.reason === 'No code') {
-      return { ok: false, reason: 'Code not found (expired or not requested)' };
+    if (!res.ok && res.reason === "No code") {
+      return { ok: false, reason: "Code not found (expired or not requested)" };
     }
 
     return res;
@@ -68,28 +66,27 @@ export class OtpService {
       throw new BadRequestException(ok.reason);
     }
 
-    const code =
-      process.env.NODE_ENV === 'development' ? '000000' : this.genCode();
+    const code = process.env.NODE_ENV === "development" ? "000000" : this.genCode();
 
     this.store.set(email, code);
     await this.email.sendOtp(email, code);
 
     return {
       ok: true,
-      devHint: process.env.NODE_ENV === 'development' ? code : undefined,
+      devHint: process.env.NODE_ENV === "development" ? code : undefined
     };
   }
 
   async verifyEmail(email: string, code: string) {
     const user = await this.usersService.findByEmail(email);
-    if (user?.isEmailValideted) {
-      return { ok: false, reason: 'Email already verified' };
+    if (user?.isEmailValidated) {
+      return { ok: false, reason: "Email already verified" };
     }
 
     const res = this.store.verify(email, code);
 
-    if (!res.ok && res.reason === 'No code') {
-      return { ok: false, reason: 'Code not found (expired or not requested)' };
+    if (!res.ok && res.reason === "No code") {
+      return { ok: false, reason: "Code not found (expired or not requested)" };
     }
 
     return res;
@@ -97,7 +94,7 @@ export class OtpService {
 
   async markEmailAsValidated(email: string) {
     const user = await this.usersService.findByEmail(email);
-    if (user && !user.isEmailValideted) {
+    if (user && !user.isEmailValidated) {
       await this.usersService.update(user.id, { isEmailValideted: true });
     }
   }
@@ -111,7 +108,7 @@ export class OtpService {
 // @Injectable()
 // export class OtpService {
 //   constructor(
-//     @Inject(SMS_PROVIDER) private sms: SmsProvider, 
+//     @Inject(SMS_PROVIDER) private sms: SmsProvider,
 //     private store: OtpStore,
 //     private usersService: UsersService
 //   ) {}
@@ -124,9 +121,9 @@ export class OtpService {
 //     const code = process.env.NODE_ENV === 'development' ? '000000' : this.genCode();
 //     this.store.set(phone, code);
 //     await this.sms.sendOtp(phone, code);
-//     return { 
+//     return {
 //       ok: true,
-//       devHint: process.env.NODE_ENV === 'development' ? code : undefined 
+//       devHint: process.env.NODE_ENV === 'development' ? code : undefined
 //     };
 //   }
 

@@ -12,7 +12,7 @@ import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 import { ChangePasswordDto } from "./dtos/change-password.dto";
 import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
-import { JwtPayload } from "../../common/types";
+import { IdentityWay, JwtPayload } from "../../common/types";
 import { setCookie } from "src/common/utils";
 
 @Injectable()
@@ -48,11 +48,11 @@ export class AuthService {
     return { message: "User created", userId: user.id };
   }
 
-  async login(res: Response, email: string, password: string) {
-    const user = await this.validateUser(email, password);
+  async login(res: Response, identityString: string, password: string) {
+    const user = await this.validateUser(identityString, password);
     if (!user) throw new UnauthorizedException();
 
-    const fullUser = await this.usersService.findById(user.id);
+    // const fullUser = await this.usersService.findById(user.id);
     // if (!fullUser?.isPhoneValidated) {
     //   throw new UnauthorizedException("Please verify your phone number first");
     // }
@@ -62,9 +62,9 @@ export class AuthService {
     // }
 
     return {
-      isPhoneValidated: fullUser?.isPhoneValidated,
-      isEmailValideted: fullUser?.isEmailValideted,
-      accessToken: this.auth(res, user.id)
+      isPhoneValidated: user.isPhoneValidated,
+      isEmailValideted: user.isEmailValidated,
+      accessToken: this.auth(res, user.id, identityString.includes("@") ? "email" : "phone")
     };
   }
 
@@ -77,8 +77,10 @@ export class AuthService {
     return this.auth(res, userId);
   }
 
-  async validateUser(email: string, pass: string) {
-    const user = await this.usersService.findByEmail(email);
+  async validateUser(identityString: string, pass: string) {
+    const user = identityString.includes("@")
+      ? await this.usersService.findByEmail(identityString)
+      : await this.usersService.findByPhone(identityString);
     if (!user) {
       throw new NotFoundException("User not found");
     }
@@ -93,8 +95,8 @@ export class AuthService {
     return result;
   }
 
-  private auth(res: Response, id: string) {
-    const { access_token, refresh_token } = this.generateTokens(id);
+  private auth(res: Response, id: string, identityWay: IdentityWay = "email") {
+    const { access_token, refresh_token } = this.generateTokens(id, identityWay);
     setCookie(res, refresh_token, new Date(Date.now() + 1000 * 60 * 60 * 24));
     return { access_token };
   }
@@ -121,8 +123,8 @@ export class AuthService {
     return { message: "Password changed successfully" };
   }
 
-  private generateTokens(userId: string) {
-    const payload: JwtPayload = { userId };
+  private generateTokens(userId: string, identityWay: IdentityWay) {
+    const payload: JwtPayload = { userId, identityWay };
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: this.JWT_ACCESS_TOKEN_TTL }),
       refresh_token: this.jwtService.sign(payload, { expiresIn: this.JWT_REFRESH_TOKEN_TTL })
