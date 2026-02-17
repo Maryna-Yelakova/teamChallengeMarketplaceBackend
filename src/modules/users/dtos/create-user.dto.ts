@@ -23,6 +23,9 @@ export class CreateUserDto {
   phone: string;
 
   @IsEmail({}, { message: "Invalid email format" })
+  @Matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, {
+    message: "Email must contain only Latin characters"
+  })
   @ApiProperty({ description: "User's email", example: "basilbasilyuk@mail.gov" })
   @IsNotEmpty()
   email: string;
