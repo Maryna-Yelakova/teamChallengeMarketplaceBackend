@@ -1,6 +1,6 @@
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-import { ConsoleLogger, ValidationPipe } from "@nestjs/common";
+import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as cookieParser from "cookie-parser";
 import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
@@ -31,10 +31,7 @@ async function bootstrap() {
     .setTitle("MarketPlace API")
     .setDescription("API documentation for MarketPlace Backend")
     .setVersion("1.0")
-    .addBearerAuth(
-      bearerAuthConfig,
-      "JWT-auth"
-    )
+    .addBearerAuth(bearerAuthConfig, "JWT-auth")
     // .addServer('http://localhost:3000', 'Development server')
     .build();
 
@@ -43,7 +40,6 @@ async function bootstrap() {
     customSiteTitle: "MarketPlace API Documentation",
     swaggerOptions
   });
-
 
   await app.listen(PORT, "::");
   return PORT;

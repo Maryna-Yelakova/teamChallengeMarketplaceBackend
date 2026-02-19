@@ -63,7 +63,7 @@ export class AuthService {
 
     return {
       isPhoneValidated: user.isPhoneValidated,
-      isEmailValideted: user.isEmailValidated,
+      isEmailValidated: user.isEmailValidated,
       accessToken: this.auth(res, user.id, identityString.includes("@") ? "email" : "phone")
     };
   }
@@ -98,7 +98,7 @@ export class AuthService {
   private auth(res: Response, id: string, identityWay: IdentityWay = "email") {
     const { access_token, refresh_token } = this.generateTokens(id, identityWay);
     setCookie(res, refresh_token, new Date(Date.now() + 1000 * 60 * 60 * 24));
-    return { access_token };
+    return access_token;
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
