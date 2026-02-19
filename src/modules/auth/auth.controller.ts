@@ -142,8 +142,8 @@ export class AuthController {
   //@UseGuards(LocalAuthGuard)
   @Post("login")
   login(@Res({ passthrough: true }) res: Response, @Body() loginUserDto: LoginUserDto) {
-    const { email, password } = loginUserDto;
-    return this.authService.login(res, email, password);
+    const { identifier, password } = loginUserDto;
+    return this.authService.login(res, identifier, password);
   }
 
   @ApiOperation({ summary: "Logout user" })
