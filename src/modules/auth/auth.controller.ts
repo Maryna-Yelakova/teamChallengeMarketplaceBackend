@@ -93,7 +93,7 @@ export class AuthController {
       type: "object",
       properties: {
         isPhoneValidated: { type: "boolean", example: false },
-        isEmailValideted: { type: "boolean", example: false },
+        isEmailValidated: { type: "boolean", example: false },
         accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
       }
     }

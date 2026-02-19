@@ -95,7 +95,7 @@ export class OtpService {
   async markEmailAsValidated(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (user && !user.isEmailValidated) {
-      await this.usersService.update(user.id, { isEmailValideted: true });
+      await this.usersService.update(user.id, { isEmailValidated: true });
     }
   }
 }
