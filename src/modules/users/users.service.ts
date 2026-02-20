@@ -7,6 +7,8 @@ import { UpdateUsersDto } from "./dtos/update-user.dto";
 import { BadRequestException } from "@nestjs/common";
 
 import { CreateUserDto } from "./dtos/create-user.dto";
+import { UpdateUserNameDto } from "./dtos/update-user-name.dto";
+import { UpdateUserBirthdayDto } from "./dtos/update-user-birthday.dto";
 
 @Injectable()
 export class UsersService {
@@ -46,6 +48,42 @@ export class UsersService {
 
   async delete(id: string): Promise<void> {
     await this.usersRepo.delete({ id });
+  }
+
+  async updateName(id: string, dto: UpdateUserNameDto): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+    Object.assign(user, dto);
+    return await this.usersRepo.save(user);
+  }
+
+  async updateBirthday(id: string, dto: UpdateUserBirthdayDto): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+    if (dto.birthDay !== undefined) {
+      user.birthDay = new Date(dto.birthDay);
+    }
+    return await this.usersRepo.save(user);
+  }
+
+  async changeEmail(id: string, newEmail: string): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+
+    const existingUser = await this.usersRepo.findOne({ where: { email: newEmail } });
+    if (existingUser && existingUser.id !== id) {
+      throw new BadRequestException("Email is already in use");
+    }
+
+    user.email = newEmail;
+    user.isEmailValidated = false;
+    return await this.usersRepo.save(user);
   }
 
   async changePhone(id: string, newPhone: string): Promise<User> {
