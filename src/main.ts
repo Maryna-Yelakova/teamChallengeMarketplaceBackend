@@ -6,6 +6,7 @@ import * as cookieParser from "cookie-parser";
 import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
 import { bearerAuthConfig, PORT, swaggerOptions } from "./constants/appConfig.constants";
 import { AppLoggerService } from "./modules/logger/logger.service";
+import { UsersService } from "./modules/users/users.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -40,6 +41,19 @@ async function bootstrap() {
     customSiteTitle: "MarketPlace API Documentation",
     swaggerOptions
   });
+
+  const usersService = app.get(UsersService);
+  setInterval(
+    () => {
+      usersService.deleteUnverifiedUsers().catch((error: unknown) => {
+        appLogger.error(
+          "Error deleting unverified users:",
+          error instanceof Error ? error.message : String(error)
+        );
+      });
+    },
+    24 * 60 * 60 * 1000
+  );
 
   await app.listen(PORT, "::");
   return PORT;
