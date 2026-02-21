@@ -11,9 +11,9 @@ import { CategoriesModule } from "./modules/categories/categories.module";
 import { SubcategoriesModule } from "./modules/subcategories/subcategories.module";
 import { OtpModule } from "./modules/otp/otp.module";
 import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
-import { APP_FILTER } from "@nestjs/core";
+import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { LoggerModule } from "./modules/logger/logger.module";
-
+import { LoggingInterceptor } from "./modules/logger/logging/logging.interceptor";
 
 @Module({
   imports: [
@@ -34,9 +34,13 @@ import { LoggerModule } from "./modules/logger/logger.module";
     LoggerModule
   ],
   controllers: [AppController],
-  providers: [AppService, {
-    provide: APP_FILTER,
-    useClass: AllExceptionsFilter,
-  }]
+  providers: [
+    AppService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter
+    },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }
+  ]
 })
 export class AppModule {}

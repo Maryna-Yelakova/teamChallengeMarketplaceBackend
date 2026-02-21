@@ -31,18 +31,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       throw new UnauthorizedException("User not found");
     }
 
+    if (user.isSeller) {
+      if (!(user.isPhoneValidated && user.isEmailValidated)) {
+        throw new UnauthorizedException("Please verify your email and phone number first");
+      }
+    }
+
     if (!user.isPhoneValidated && payload.identityWay === "phone") {
       throw new UnauthorizedException("Please verify your phone number first");
     }
 
     if (!user.isEmailValidated && payload.identityWay === "email") {
       throw new UnauthorizedException("Please verify your email first");
-    }
-
-    if (user.isSeller) {
-      if (!(user.isPhoneValidated && user.isEmailValidated)) {
-        throw new UnauthorizedException("Please verify your email and phone number first");
-      }
     }
 
     return { userId: payload.userId };

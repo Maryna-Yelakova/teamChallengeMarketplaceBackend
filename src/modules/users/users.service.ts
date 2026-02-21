@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "../../entities/user.entity";
-import { Repository } from "typeorm";
+import { LessThan, Repository } from "typeorm";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 
 import { BadRequestException } from "@nestjs/common";
@@ -61,7 +61,16 @@ export class UsersService {
 
     user.phone = newPhone;
     user.isPhoneValidated = false;
-    
+
     return await this.usersRepo.save(user);
+  }
+
+  async deleteUnverifiedUsers() {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await this.usersRepo.delete({
+      createdAt: LessThan(twoDaysAgo),
+      isEmailValidated: false,
+      isPhoneValidated: false
+    });
   }
 }
