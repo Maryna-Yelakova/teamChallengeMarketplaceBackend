@@ -11,6 +11,9 @@ import {
 import { UsersService } from "./users.service";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 import { ChangePhoneDto } from "./dtos/change-phone.dto";
+import { UpdateUserNameDto } from "./dtos/update-user-name.dto";
+import { UpdateUserBirthdayDto } from "./dtos/update-user-birthday.dto";
+import { ChangeEmailDto } from "./dtos/change-email.dto";
 import { 
   ApiBearerAuth, 
   ApiOperation, 
@@ -217,6 +220,218 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async updateUser(@Param("id") id: string, @Body() updateUserDto: UpdateUsersDto) {
     return await this.UsersService.update(id, updateUserDto);
+  }
+
+  @Patch(":id/name")
+  @ApiOperation({ summary: "Update user's name fields" })
+  @ApiOkResponse({
+    description: 'Name updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
+        firstName: { type: 'string', example: 'Василь' },
+        middleName: { type: 'string', example: 'Іванович' },
+        lastName: { type: 'string', example: 'Петренко' },
+        email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
+        phone: { type: 'string', example: '+380991234567' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Not Found' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'array', items: { type: 'string' }, example: ['firstName must be a string'] },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'User not authenticated',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiParam({
+    name: "id",
+    description: "The unique user's ID",
+    type: String,
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
+  })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async updateName(@Param("id") id: string, @Body() dto: UpdateUserNameDto) {
+    const user = await this.UsersService.findById(id);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const updatedUser = await this.UsersService.updateName(id, dto);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = updatedUser;
+    return result;
+  }
+
+  @Patch(":id/birthday")
+  @ApiOperation({ summary: "Update user's date of birth" })
+  @ApiOkResponse({
+    description: 'Birthday updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
+        firstName: { type: 'string', example: 'Василь' },
+        birthDay: { type: 'string', format: 'date-time', example: '1990-01-01T00:00:00.000Z' },
+        email: { type: 'string', example: 'basilbasilyuk@mail.gov' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Not Found' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'array', items: { type: 'string' }, example: ['birthDay must be a valid ISO 8601 date string'] },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'User not authenticated',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiParam({
+    name: "id",
+    description: "The unique user's ID",
+    type: String,
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
+  })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async updateBirthday(@Param("id") id: string, @Body() dto: UpdateUserBirthdayDto) {
+    const user = await this.UsersService.findById(id);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const updatedUser = await this.UsersService.updateBirthday(id, dto);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = updatedUser;
+    return result;
+  }
+
+  @Patch(":id/email")
+  @ApiOperation({ summary: "Change user's email address" })
+  @ApiOkResponse({
+    description: 'Email changed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', format: 'uuid', example: '181fe998-8066-41e1-989b-71cd9a085a55' },
+        firstName: { type: 'string', example: 'Василь' },
+        email: { type: 'string', example: 'new@example.com' },
+        isEmailValidated: { type: 'boolean', example: false },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' }
+      }
+    }
+  })
+  @ApiNotFoundResponse({
+    description: 'User not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 404 },
+        message: { type: 'string', example: 'User not found' },
+        error: { type: 'string', example: 'Not Found' }
+      }
+    }
+  })
+  @ApiBadRequestResponse({
+    description: 'Validation error or email already in use',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Email is already in use' },
+        error: { type: 'string', example: 'Bad Request' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'User not authenticated',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Unauthorized' },
+        error: { type: 'string', example: 'Unauthorized' }
+      }
+    }
+  })
+  @ApiParam({
+    name: "id",
+    description: "The unique user's ID",
+    type: String,
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
+  })
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(JwtAuthGuard)
+  async changeEmail(@Param("id") id: string, @Body() dto: ChangeEmailDto) {
+    const user = await this.UsersService.findById(id);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
+    const updatedUser = await this.UsersService.changeEmail(id, dto.newEmail);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = updatedUser;
+    return result;
   }
 
   @Patch(":id/change-phone")
