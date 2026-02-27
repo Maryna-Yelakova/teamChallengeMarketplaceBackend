@@ -18,11 +18,15 @@ export class Seller {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
-  @ManyToOne(() => User, user => user.sellers)
+  @ManyToOne(() => User, user => user.sellers, { onDelete: "CASCADE" })
   @JoinColumn({ name: "userId" })
   user: User;
 
-  @ApiProperty({ description: "User ID of the seller", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" })
+  @ApiProperty({
+    description: "User ID of the seller",
+    format: "uuid",
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
+  })
   @Column()
   userId: string;
 
@@ -30,11 +34,19 @@ export class Seller {
   @Column()
   shopName: string;
 
-  @ApiProperty({ required: false, description: "Legal address of the seller", example: "123 Main St, Kiev, Ukraine" })
+  @ApiProperty({
+    required: false,
+    description: "Legal address of the seller",
+    example: "123 Main St, Kiev, Ukraine"
+  })
   @Column({ nullable: true })
   legalAddress?: string;
 
-  @ApiProperty({ required: false, description: "Tax identification number", example: "12345678901" })
+  @ApiProperty({
+    required: false,
+    description: "Tax identification number",
+    example: "12345678901"
+  })
   @Column({ nullable: true })
   taxId?: string;
 
@@ -42,7 +54,11 @@ export class Seller {
   @Column({ nullable: true })
   phone?: string;
 
-  @ApiProperty({ required: false, description: "Description of the seller's business", example: "We sell quality products" })
+  @ApiProperty({
+    required: false,
+    description: "Description of the seller's business",
+    example: "We sell quality products"
+  })
   @Column({ nullable: true })
   description?: string;
 

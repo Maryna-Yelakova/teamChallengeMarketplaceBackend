@@ -8,12 +8,18 @@ import { PassportModule } from "@nestjs/passport";
 import { LocalStrategy } from "./strategys/local.strategy";
 import { JwtStrategy } from "./strategys/jwt.strategy";
 import { JwtRefreshStrategy } from "./strategys/jwt-refresh.strategy";
+import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+
+import { CaslModule } from "src/casl/casl.module";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { User } from "src/entities/user.entity";
 
 @Module({
   imports: [
     PassportModule,
     UsersModule,
     ConfigModule.forRoot(),
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: {
@@ -23,10 +29,11 @@ import { JwtRefreshStrategy } from "./strategys/jwt-refresh.strategy";
         algorithms: ["HS256"],
         ignoreExpiration: false
       }
-    })
+    }),
+    CaslModule
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, JwtRefreshStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, JwtRefreshStrategy, JwtAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService]
+  exports: [AuthService, JwtAuthGuard]
 })
 export class AuthModule {}

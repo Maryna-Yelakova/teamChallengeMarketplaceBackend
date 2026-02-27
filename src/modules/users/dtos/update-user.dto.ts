@@ -1,22 +1,11 @@
 import { ApiPropertyOptional } from "@nestjs/swagger";
-import { IsDate, IsEmail, IsString, IsOptional, IsBoolean } from "class-validator";
+import { IsDate, IsString, IsOptional } from "class-validator";
 
 export class UpdateUsersDto {
   @ApiPropertyOptional({ description: "User's first name", example: "Василь" })
   @IsOptional()
   @IsString()
   firstName?: string;
-
-  @ApiPropertyOptional({ description: "User's phone number", example: "+380991234567" })
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @ApiPropertyOptional({ description: "User's email", example: "basilbasilyuk@mail.gov" })
-  @IsOptional()
-  @IsString()
-  @IsEmail()
-  email?: string;
 
   @ApiPropertyOptional({ description: "User's middle name", example: "Васильович" })
   @IsOptional()
@@ -32,19 +21,4 @@ export class UpdateUsersDto {
   @IsOptional()
   @IsDate()
   birthDay?: Date;
-
-  @ApiPropertyOptional({ description: "User's password", example: "mysecretword" })
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  @ApiPropertyOptional({ description: "Whether user's phone is validated", example: false })
-  @IsOptional()
-  @IsBoolean()
-  isPhoneValidated?: boolean;
-
-  @ApiPropertyOptional({ description: "Whether user's email is validated", example: false })
-  @IsOptional()
-  @IsBoolean()
-  isEmailValidated?: boolean;
 }

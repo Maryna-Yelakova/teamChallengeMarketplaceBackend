@@ -8,10 +8,9 @@ import {
   ApiBadRequestResponse,
   ApiConsumes,
   ApiProduces,
-  ApiQuery,
-  ApiHeader,
   ApiTooManyRequestsResponse,
-  getSchemaPath
+  getSchemaPath,
+  ApiBearerAuth
 } from "@nestjs/swagger";
 
 import { SendOtpDto } from "./dtos/send-otp.dto";
@@ -21,38 +20,22 @@ import { VerifyEmailOtpDto } from "./dtos/verify-email-otp.dto";
 import { SendOtpResponseDto } from "./dtos/send-otp.response";
 import { VerifyOtpResponseDto } from "./dtos/verify-otp.response";
 import { OtpService } from "./otp.service";
+import { Ability } from "src/casl/decorators/ability.decorator";
+import { AppAbility } from "src/casl/casl-ability.types";
 
 @ApiTags("Otp")
-@Controller("auth/phone")
+@Controller("otp")
 export class OtpController {
   constructor(private otp: OtpService) {}
 
-  @Post("send")
+  @Post("phone/send")
   @ApiOperation({ summary: "Надіслати OTP на телефон", operationId: "sendPhoneOtp" })
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: SendOtpDto })
+  @ApiBearerAuth("JWT-auth")
 
   // -------- Optional Parameters (will show up in "Parameters") --------
-  @ApiQuery({
-    name: "channel",
-    required: false,
-    enum: ["sms"],
-    example: "sms",
-    description: "Канал відправки OTP"
-  })
-  @ApiQuery({
-    name: "lang",
-    required: false,
-    example: "uk",
-    description: "Мова повідомлення (ISO 639-1)"
-  })
-  @ApiHeader({
-    name: "x-request-id",
-    required: false,
-    example: "a1b2c3d4-e5f6-47aa-9b10-112233445566",
-    description: "Кореляційний ID для логування/трасування"
-  })
   @ApiCreatedResponse({
     description: "OTP успішно відправлено",
     content: {
@@ -105,11 +88,12 @@ export class OtpController {
     return this.otp.send(dto.phone); // dev: { ok:true, devHint:'000000' }
   }
 
-  @Post("verify")
+  @Post("phone/verify")
   @ApiOperation({ summary: "Перевірити OTP код", operationId: "verifyPhoneOtp" })
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: VerifyOtpDto })
+  @ApiBearerAuth("JWT-auth")
   @HttpCode(200)
   @ApiOkResponse({
     description: "Результат перевірки OTP",
@@ -145,10 +129,10 @@ export class OtpController {
       }
     }
   })
-  async verify(@Body() dto: VerifyOtpDto) {
+  async verify(@Body() dto: VerifyOtpDto, @Ability() ability: AppAbility) {
     const res = await this.otp.verify(dto.phone, dto.code);
     if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markPhoneAsValidated(dto.phone);
+    await this.otp.markPhoneAsValidated(dto.phone, ability);
     return { ok: true };
   }
 
@@ -157,6 +141,7 @@ export class OtpController {
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: SendEmailOtpDto })
+  @ApiBearerAuth("JWT-auth")
   @ApiCreatedResponse({
     description: "OTP successfully sent to email",
     content: {
@@ -201,6 +186,7 @@ export class OtpController {
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: VerifyEmailOtpDto })
+  @ApiBearerAuth("JWT-auth")
   @HttpCode(200)
   @ApiOkResponse({
     description: "Email OTP verification result",
@@ -235,10 +221,10 @@ export class OtpController {
       }
     }
   })
-  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
+  async verifyEmail(@Body() dto: VerifyEmailOtpDto, @Ability() ability: AppAbility) {
     const res = await this.otp.verifyEmail(dto.email, dto.code);
     if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markEmailAsValidated(dto.email);
+    await this.otp.markEmailAsValidated(dto.email, ability);
     return { ok: true };
   }
 }

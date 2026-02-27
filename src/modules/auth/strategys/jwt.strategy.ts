@@ -1,21 +1,27 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
+import { InjectRepository } from "@nestjs/typeorm";
 import { ExtractJwt, Strategy } from "passport-jwt";
+import { CaslAbilityFactory } from "src/casl/casl-ability.factory";
+import { AppAbility } from "src/casl/casl-ability.types";
 import { IdentityWay } from "src/common/types";
-import { UsersService } from "src/modules/users/users.service";
+import { User } from "src/entities/user.entity";
+import { Repository } from "typeorm";
 //import { JwtPayload } from "src/common/types";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
   constructor(
+    @InjectRepository(User)
+    private usersRepo: Repository<User>,
     private configService: ConfigService,
-    private userService: UsersService
+    private caslAbilityFactory: CaslAbilityFactory
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: true,
-      secretOrKey: configService.getOrThrow<string>("JWT_SECRET") // краще з .env
+      secretOrKey: configService.getOrThrow<string>("JWT_SECRET")
     });
   }
 
@@ -26,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       throw new UnauthorizedException("Access token has expired");
     }
 
-    const user = await this.userService.findById(payload.userId);
+    const user = await this.usersRepo.findOneBy({ id: payload.userId });
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
@@ -45,6 +51,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
       throw new UnauthorizedException("Please verify your email first");
     }
 
-    return { userId: payload.userId };
+    const ability: AppAbility = this.caslAbilityFactory.createForUser(user);
+
+    return { userId: payload.userId, identityWay: payload.identityWay, ability };
   }
 }

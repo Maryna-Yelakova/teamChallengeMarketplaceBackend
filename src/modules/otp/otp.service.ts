@@ -3,6 +3,13 @@ import { SmsProvider, SMS_PROVIDER } from "../sms/sms.provider";
 import { EmailProvider, EMAIL_PROVIDER } from "../email/email.provider";
 import { OtpStore } from "./otp.store";
 import { UsersService } from "../users/users.service";
+import { AppAbility } from "src/casl/casl-ability.types";
+import { UpdateUsersDto } from "../users/dtos/update-user.dto";
+
+interface UpdatePhoneEmailDto extends UpdateUsersDto {
+  isPhoneValidated?: boolean;
+  isEmailValidated?: boolean;
+}
 
 @Injectable()
 export class OtpService {
@@ -53,10 +60,11 @@ export class OtpService {
     return res;
   }
 
-  async markPhoneAsValidated(phone: string) {
+  async markPhoneAsValidated(phone: string, ability: AppAbility) {
     const user = await this.usersService.findByPhone(phone);
     if (user && !user.isPhoneValidated) {
-      await this.usersService.update(user.id, { isPhoneValidated: true });
+      const updateData: UpdatePhoneEmailDto = { isPhoneValidated: true };
+      await this.usersService.update(user.id, updateData, ability);
     }
   }
 
@@ -92,10 +100,11 @@ export class OtpService {
     return res;
   }
 
-  async markEmailAsValidated(email: string) {
+  async markEmailAsValidated(email: string, ability: AppAbility) {
     const user = await this.usersService.findByEmail(email);
     if (user && !user.isEmailValidated) {
-      await this.usersService.update(user.id, { isEmailValidated: true });
+      const updateData: UpdatePhoneEmailDto = { isEmailValidated: true };
+      await this.usersService.update(user.id, updateData, ability);
     }
   }
 }

@@ -1,21 +1,8 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Res,
-  HttpCode,
-  HttpStatus,
-  Req,
-  UseGuards,
-  Patch
-} from "@nestjs/common";
+import { Controller, Post, Body, Res, HttpCode, HttpStatus, Req, UseGuards } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
-import { ChangePasswordDto } from "./dtos/change-password.dto";
-
 import {
-  ApiBody,
   ApiOperation,
   // ApiResponse,
   ApiBadRequestResponse,
@@ -31,13 +18,16 @@ import { RequestWithUser } from "../../common/types";
 
 import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 
-import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-
 import { LoginUserDto } from "../users/dtos/login-user.dto";
+import { Public } from "./decorators/public.decorator";
+import { CheckPolicies } from "src/casl/decorators/check-policies.decorator";
+import { Action, AppAbility } from "src/casl/casl-ability.types";
+import { User } from "src/entities/user.entity";
 
 // import { LocalAuthGuard } from "./local-auth.guard";
 
 @ApiTags("Auth")
+@CheckPolicies((ability: AppAbility) => ability.can(Action.Read, User))
 @Controller("auth")
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -81,6 +71,7 @@ export class AuthController {
       }
     }
   })
+  @Public()
   @Post("register")
   register(@Res({ passthrough: true }) res: Response, @Body() createUserDto: CreateUserDto) {
     return this.authService.register(res, createUserDto);
@@ -139,7 +130,7 @@ export class AuthController {
     }
   })
   @HttpCode(HttpStatus.OK)
-  //@UseGuards(LocalAuthGuard)
+  @Public()
   @Post("login")
   login(@Res({ passthrough: true }) res: Response, @Body() loginUserDto: LoginUserDto) {
     const { identifier, password } = loginUserDto;
@@ -149,7 +140,6 @@ export class AuthController {
   @ApiOperation({ summary: "Logout user" })
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth("JWT-auth")
-  @UseGuards(JwtAuthGuard)
   @Post("logout")
   logout(@Res({ passthrough: true }) res: Response) {
     return this.authService.logout(res);
@@ -178,67 +168,10 @@ export class AuthController {
   })
   @ApiBearerAuth("JWT-auth")
   @HttpCode(HttpStatus.OK)
+  @Public()
   @UseGuards(JwtRefreshGuard)
   @Post("refresh")
   refresh(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
     return this.authService.refresh(req.user.userId, res);
-  }
-
-  @ApiOperation({ summary: "Change user password" })
-  @ApiBody({
-    schema: {
-      type: "object",
-      properties: {
-        currentPassword: { type: "string", example: "oldpassword" },
-        newPassword: { type: "string", example: "newpassword" }
-      }
-    }
-  })
-  @ApiOkResponse({
-    description: "Password successfully changed",
-    schema: {
-      type: "object",
-      properties: {
-        message: { type: "string", example: "Password changed successfully" }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: "Invalid current password or validation error",
-    schema: {
-      type: "object",
-      properties: {
-        statusCode: { type: "number", example: 400 },
-        message: {
-          oneOf: [
-            { type: "string", example: "Current password is incorrect" },
-            {
-              type: "array",
-              items: { type: "string" },
-              example: ["newPassword must be longer than or equal to 6 characters"]
-            }
-          ]
-        },
-        error: { type: "string", example: "Bad Request" }
-      }
-    }
-  })
-  @ApiUnauthorizedResponse({
-    description: "User not authenticated",
-    schema: {
-      type: "object",
-      properties: {
-        statusCode: { type: "number", example: 401 },
-        message: { type: "string", example: "Unauthorized" },
-        error: { type: "string", example: "Unauthorized" }
-      }
-    }
-  })
-  @ApiBearerAuth("JWT-auth")
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
-  @Patch("change-password")
-  changePassword(@Req() req: RequestWithUser, @Body() dto: ChangePasswordDto) {
-    return this.authService.changePassword(req.user.userId, dto);
   }
 }
