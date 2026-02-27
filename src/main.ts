@@ -2,11 +2,15 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import * as cookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
 import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
 import { bearerAuthConfig, PORT, swaggerOptions } from "./constants/appConfig.constants";
 import { AppLoggerService } from "./modules/logger/logger.service";
 import { UsersService } from "./modules/users/users.service";
+import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
+import { PoliciesGuard } from "./casl/policies.guard";
+// import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
+import { CaslExceptionFilter } from "./casl/filters/casl-exception.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,7 +30,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
+  app.useGlobalGuards(app.get(JwtAuthGuard), app.get(PoliciesGuard));
+
   app.useGlobalFilters(new UnauthorizedExceptionFilter());
+  app.useGlobalFilters(new CaslExceptionFilter());
+  // app.useGlobalFilters(new AllExceptionsFilter(appLogger));
 
   const config = new DocumentBuilder()
     .setTitle("MarketPlace API")
