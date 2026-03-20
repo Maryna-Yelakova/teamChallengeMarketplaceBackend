@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { AppAbility } from "src/casl/casl-ability.types";
+import { AppAbility } from "src/modules/casl/casl-ability.types";
 import { User } from "src/entities/user.entity";
 
 export interface AuthUser extends User {

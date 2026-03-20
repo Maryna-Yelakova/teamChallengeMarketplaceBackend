@@ -10,7 +10,7 @@ import { JwtStrategy } from "./strategys/jwt.strategy";
 import { JwtRefreshStrategy } from "./strategys/jwt-refresh.strategy";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 
-import { CaslModule } from "src/casl/casl.module";
+import { CaslModule } from "src/modules/casl/casl.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "src/entities/user.entity";
 

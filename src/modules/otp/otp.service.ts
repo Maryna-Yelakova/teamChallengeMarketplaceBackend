@@ -1,12 +1,12 @@
-import { Injectable, Inject, BadRequestException } from "@nestjs/common";
+import { Injectable, Inject, BadRequestException, NotFoundException } from "@nestjs/common";
 import { SmsProvider, SMS_PROVIDER } from "../sms/sms.provider";
 import { EmailProvider, EMAIL_PROVIDER } from "../email/email.provider";
 import { OtpStore } from "./otp.store";
 import { UsersService } from "../users/users.service";
-import { AppAbility } from "src/casl/casl-ability.types";
+
 import { UpdateUsersDto } from "../users/dtos/update-user.dto";
 
-interface UpdatePhoneEmailDto extends UpdateUsersDto {
+export interface UpdatePhoneEmailDto extends UpdateUsersDto {
   isPhoneValidated?: boolean;
   isEmailValidated?: boolean;
 }
@@ -60,11 +60,11 @@ export class OtpService {
     return res;
   }
 
-  async markPhoneAsValidated(phone: string, ability: AppAbility) {
+  async markPhoneAsValidated(phone: string) {
     const user = await this.usersService.findByPhone(phone);
     if (user && !user.isPhoneValidated) {
-      const updateData: UpdatePhoneEmailDto = { isPhoneValidated: true };
-      await this.usersService.update(user.id, updateData, ability);
+      // const updateData: UpdatePhoneEmailDto = { isPhoneValidated: true };
+      await this.usersService.markPhoneAsValidated(phone);
     }
   }
 
@@ -87,6 +87,9 @@ export class OtpService {
 
   async verifyEmail(email: string, code: string) {
     const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
     if (user?.isEmailValidated) {
       return { ok: false, reason: "Email already verified" };
     }
@@ -100,11 +103,11 @@ export class OtpService {
     return res;
   }
 
-  async markEmailAsValidated(email: string, ability: AppAbility) {
+  async markEmailAsValidated(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (user && !user.isEmailValidated) {
-      const updateData: UpdatePhoneEmailDto = { isEmailValidated: true };
-      await this.usersService.update(user.id, updateData, ability);
+      // const updateData: UpdatePhoneEmailDto = { isEmailValidated: true };
+      await this.usersService.markEmailAsValidated(email);
     }
   }
 }

@@ -1,55 +1,106 @@
-import { Injectable, LoggerService } from "@nestjs/common";
-import { createLogger, format, transports, Logger } from "winston";
-import "winston-daily-rotate-file";
+import { Injectable } from "@nestjs/common";
+import pino, { Logger } from "pino";
+import { getCorrelationId } from "src/context/request-context";
 
 @Injectable()
-export class AppLoggerService implements LoggerService {
-  private logger: Logger;
+export class LoggerService {
+  private readonly logger: Logger;
 
   constructor() {
-    this.logger = createLogger({
-      level: "info",
-      format: format.combine(format.timestamp(), format.errors({ stack: true }), format.json()),
-      transports: [
-        new transports.Console(),
+    const isProd = process.env.NODE_ENV === "production";
 
-        // Error log file, rotated daily, keep only 2 days
-        new transports.DailyRotateFile({
-          filename: "logs/error-%DATE%.log",
-          level: "error",
-          datePattern: "YYYY-MM-DD",
-          zippedArchive: true,
-          maxFiles: "2d" // <-- KEEP files only for 2 days
-        }),
+    this.logger = pino({
+      level: process.env.LOG_LEVEL ?? (isProd ? "info" : "debug"),
 
-        // Combined log file
-        new transports.DailyRotateFile({
-          filename: "logs/combined-%DATE%.log",
-          datePattern: "YYYY-MM-DD",
-          zippedArchive: true,
-          maxFiles: "2d" // <-- old combined logs deleted automatically
-        })
-      ]
+      transport: {
+        targets: [
+          {
+            target: "pino-rotating-file-stream",
+            options: {
+              path: "./logs",
+              filename: "app.log",
+              interval: "1d", // щодня
+              size: "10M", // або по розміру
+              maxFiles: 7, // 🔥 максимум 7 файлів
+              compress: true
+            }
+          },
+          {
+            target: "pino-rotating-file-stream",
+            level: "error",
+            options: {
+              path: "./logs",
+              filename: "error.log",
+              interval: "1d", // щодня
+              size: "10M", // або по розміру
+              maxFiles: 7, // 🔥 максимум 7 файлів
+              compress: true
+            }
+          },
+          {
+            target: "pino-pretty",
+            options: {
+              colorize: true,
+              translateTime: "SYS:standard",
+              ignore: "pid,hostname"
+            }
+          }
+        ]
+      },
+
+      base: undefined, // не додаємо pid/hostname
+      timestamp: pino.stdTimeFunctions.isoTime
     });
   }
 
-  log(message: string, context?: string) {
-    this.logger.info({ message, context });
+  private withContext(payload: Record<string, unknown>) {
+    const result =
+      typeof payload === "object" && payload !== null ? payload : { message: String(payload) };
+    return {
+      ...result,
+      correlationId: getCorrelationId()
+    };
   }
 
-  error(message: string, trace?: string, context?: string) {
-    this.logger.error({ message, trace, context });
+  log(message: unknown) {
+    this.logger.info(this.withContext({ message }));
   }
 
-  warn(message: string, context?: string) {
-    this.logger.warn({ message, context });
+  info(payload: Record<string, unknown>) {
+    this.logger.info(this.withContext(payload));
   }
 
-  debug(message: string, context?: string) {
-    this.logger.debug({ message, context });
+  error(payload: Record<string, unknown>) {
+    this.logger.error(this.withContext(payload));
   }
 
-  verbose(message: string, context?: string) {
-    this.logger.verbose({ message, context });
+  fatal(message: unknown) {
+    this.logger.fatal(this.withContext({ message }));
+  }
+
+  warn(payload: Record<string, unknown>) {
+    this.logger.warn(this.withContext(payload));
+  }
+
+  debug(payload: Record<string, unknown>) {
+    this.logger.debug(this.withContext(payload));
+  }
+
+  verbose(message: unknown) {
+    this.logger.debug(this.withContext({ message }));
+  }
+
+  withService(context: string) {
+    const child = this.logger.child({ context });
+
+    return {
+      info: (payload: Record<string, unknown>) => child.info(this.withContext(payload)),
+
+      error: (payload: Record<string, unknown>) => child.error(this.withContext(payload)),
+
+      warn: (payload: Record<string, unknown>) => child.warn(this.withContext(payload)),
+
+      debug: (payload: Record<string, unknown>) => child.debug(this.withContext(payload))
+    };
   }
 }

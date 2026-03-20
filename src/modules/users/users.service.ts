@@ -9,19 +9,27 @@ import { BadRequestException } from "@nestjs/common";
 import { CreateUserDto } from "./dtos/create-user.dto";
 import { Request } from "express";
 
-import { Action, AppAbility } from "src/casl/casl-ability.types";
+import { Action, AppAbility } from "src/modules/casl/casl-ability.types";
 import { ForbiddenError } from "@casl/ability";
 import { ChangePasswordDto } from "../auth/dtos/change-password.dto";
 import * as bcrypt from "bcrypt";
+import { LoggerService } from "../logger/logger.service";
+import { ContextLogger } from "../logger/types/logger.types";
+
 // import { Action } from "src/casl/casl-ability.types";
 // import { ForbiddenError } from "@casl/ability";
 
 @Injectable()
 export class UsersService {
+  private readonly logger: ContextLogger;
+
   constructor(
     @InjectRepository(User)
-    private usersRepo: Repository<User>
-  ) {}
+    private usersRepo: Repository<User>,
+    private readonly baseLogger: LoggerService
+  ) {
+    this.logger = this.baseLogger.withService(UsersService.name);
+  }
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.usersRepo.findOne({ where: { email: createUserDto.email } });
@@ -30,6 +38,12 @@ export class UsersService {
     }
 
     const user = this.usersRepo.create(createUserDto);
+
+    this.logger.debug({
+      message: "User created",
+      userId: user.id
+    });
+
     return await this.usersRepo.save(user);
   }
 
@@ -63,6 +77,24 @@ export class UsersService {
     const user = await this.findById(id, ability);
 
     Object.assign(user, updateUserDto);
+    return await this.usersRepo.save(user);
+  }
+
+  async markPhoneAsValidated(phone: string) {
+    const user = await this.findByPhone(phone);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    user.isPhoneValidated = true;
+    return await this.usersRepo.save(user);
+  }
+
+  async markEmailAsValidated(email: string) {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+    user.isEmailValidated = true;
     return await this.usersRepo.save(user);
   }
 

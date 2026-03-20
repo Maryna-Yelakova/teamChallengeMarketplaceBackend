@@ -20,8 +20,8 @@ import { JwtRefreshGuard } from "./guards/jwt-refresh.guard";
 
 import { LoginUserDto } from "../users/dtos/login-user.dto";
 import { Public } from "./decorators/public.decorator";
-import { CheckPolicies } from "src/casl/decorators/check-policies.decorator";
-import { Action, AppAbility } from "src/casl/casl-ability.types";
+import { CheckPolicies } from "src/modules/casl/decorators/check-policies.decorator";
+import { Action, AppAbility } from "src/modules/casl/casl-ability.types";
 import { User } from "src/entities/user.entity";
 
 // import { LocalAuthGuard } from "./local-auth.guard";

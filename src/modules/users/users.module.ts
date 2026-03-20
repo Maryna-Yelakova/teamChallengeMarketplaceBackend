@@ -17,6 +17,10 @@ import { Order } from "src/entities/order.entity";
 import { OrderItem } from "src/entities/order-item.entity";
 import { Coupon } from "src/entities/cupon.entity";
 import { Payment } from "src/entities/payment.entity";
+// import pino from "pino";
+import { LoggerModule } from "../logger/logger.module";
+import { Request } from "express";
+import { LoggerService } from "../logger/logger.service";
 
 @Module({
   imports: [
@@ -39,10 +43,11 @@ import { Payment } from "src/entities/payment.entity";
       OrderItem,
       Coupon,
       Payment
-    ])
+    ]),
+    LoggerModule
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, LoggerService],
   exports: [UsersService]
 })
 export class UsersModule {}

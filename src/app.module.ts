@@ -14,20 +14,38 @@ import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filt
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { LoggerModule } from "./modules/logger/logger.module";
 import { LoggingInterceptor } from "./modules/logger/logging/logging.interceptor";
-// import { PoliciesGuard } from "./casl/policies.guard";
-import { CaslModule } from "./casl/casl.module";
-import { PoliciesGuard } from "./casl/policies.guard";
+
+import { CaslModule } from "./modules/casl/casl.module";
+import { PoliciesGuard } from "./modules/casl/policies.guard";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
+import { LoggerService } from "./modules/logger/logger.service";
+import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    TypeOrmModule.forRoot({
-      type: "postgres",
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true
+    LoggerModule,
+    TypeOrmModule.forRootAsync({
+      imports: [LoggerModule],
+      inject: [LoggerService],
+      useFactory: (logger: LoggerService) => ({
+        type: "postgres",
+        url: process.env.DATABASE_URL,
+        autoLoadEntities: true,
+        synchronize: true,
+
+        logger: new TypeOrmPinoLogger(logger),
+
+        logging: true,
+        maxQueryExecutionTime: 200
+      })
     }),
+    // TypeOrmModule.forRoot({
+    //   type: "postgres",
+    //   url: process.env.DATABASE_URL,
+    //   autoLoadEntities: true,
+    //   synchronize: true
+    // }),
     UsersModule,
     AuthModule,
     SellersModule,
@@ -35,12 +53,13 @@ import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
     CategoriesModule,
     SubcategoriesModule,
     OtpModule,
-    LoggerModule,
+
     CaslModule
   ],
   controllers: [AppController],
   providers: [
     AppService,
+
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter
