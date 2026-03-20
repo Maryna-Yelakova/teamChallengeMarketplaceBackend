@@ -24,9 +24,9 @@ import {
   ApiBody
 } from "@nestjs/swagger";
 // import { User } from "src/entities/user.entity";
-import { AppAbility } from "src/casl/casl-ability.types";
+import { AppAbility } from "src/modules/casl/casl-ability.types";
 
-import { Ability } from "src/casl/decorators/ability.decorator";
+import { Ability } from "src/modules/casl/decorators/ability.decorator";
 import { RequestWithUser } from "src/common/types";
 import { ChangePasswordDto } from "../auth/dtos/change-password.dto";
 

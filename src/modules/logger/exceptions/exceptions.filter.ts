@@ -1,24 +1,42 @@
 import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from "@nestjs/common";
-import { AppLoggerService } from "../logger.service";
+import { LoggerService } from "../logger.service";
+import { Request, Response } from "express";
+import { ContextLogger } from "../types/logger.types";
+// import { Logger } from "nestjs-pino";
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private logger: AppLoggerService) {}
+  private readonly logger: ContextLogger;
 
-  catch(exception: HttpException, host: ArgumentsHost) {
+  constructor(private readonly baseLogger: LoggerService) {
+    this.logger = this.baseLogger.withService(AllExceptionsFilter.name);
+  }
+
+  catch(exception: Error, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<{
-      status: (code: number) => { json: (body: unknown) => void };
-    }>();
-    const request = ctx.getRequest<{ url: string }>();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
     const status = exception instanceof HttpException ? exception.getStatus() : 500;
+    const message = exception.message;
 
-    this.logger.error(`Exception: ${exception.message}`, exception.stack, request.url);
+    // this.logger.error({ message, payload: exception.stack, url: request.url });
+
+    this.logger.error({
+      message,
+      status,
+      path: request.url,
+      method: request.method,
+      correlationId: request.headers["x-correlation-id"],
+      stack: exception instanceof Error ? exception.stack : null
+    });
 
     response.status(status).json({
       statusCode: status,
-      message: exception.message
+      message,
+      path: request.url,
+      timestamp: new Date().toISOString(),
+      correlationId: response.getHeader("x-correlation-id")
     });
   }
 }

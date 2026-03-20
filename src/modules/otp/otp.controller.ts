@@ -20,11 +20,12 @@ import { VerifyEmailOtpDto } from "./dtos/verify-email-otp.dto";
 import { SendOtpResponseDto } from "./dtos/send-otp.response";
 import { VerifyOtpResponseDto } from "./dtos/verify-otp.response";
 import { OtpService } from "./otp.service";
-import { Ability } from "src/casl/decorators/ability.decorator";
-import { AppAbility } from "src/casl/casl-ability.types";
+
+import { Public } from "../auth/decorators/public.decorator";
 
 @ApiTags("Otp")
 @Controller("otp")
+@Public()
 export class OtpController {
   constructor(private otp: OtpService) {}
 
@@ -33,7 +34,6 @@ export class OtpController {
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: SendOtpDto })
-  @ApiBearerAuth("JWT-auth")
 
   // -------- Optional Parameters (will show up in "Parameters") --------
   @ApiCreatedResponse({
@@ -93,7 +93,7 @@ export class OtpController {
   @ApiConsumes("application/json")
   @ApiProduces("application/json")
   @ApiBody({ type: VerifyOtpDto })
-  @ApiBearerAuth("JWT-auth")
+  // @ApiBearerAuth("JWT-auth")
   @HttpCode(200)
   @ApiOkResponse({
     description: "Результат перевірки OTP",
@@ -129,10 +129,10 @@ export class OtpController {
       }
     }
   })
-  async verify(@Body() dto: VerifyOtpDto, @Ability() ability: AppAbility) {
+  async verify(@Body() dto: VerifyOtpDto) {
     const res = await this.otp.verify(dto.phone, dto.code);
     if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markPhoneAsValidated(dto.phone, ability);
+    await this.otp.markPhoneAsValidated(dto.phone);
     return { ok: true };
   }
 
@@ -221,11 +221,11 @@ export class OtpController {
       }
     }
   })
-  async verifyEmail(@Body() dto: VerifyEmailOtpDto, @Ability() ability: AppAbility) {
+  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
     const res = await this.otp.verifyEmail(dto.email, dto.code);
     if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markEmailAsValidated(dto.email, ability);
-    return { ok: true };
+    await this.otp.markEmailAsValidated(dto.email);
+    return { ok: true, reason: res.reason };
   }
 }
 

@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ExtractJwt, Strategy } from "passport-jwt";
+
 import { extractRefreshToken } from "src/common/utils";
 import { User } from "src/entities/user.entity";
 
@@ -17,12 +18,12 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, "refresh") {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([extractRefreshToken]),
-      ignoreExpiration: true,
+      ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>("JWT_SECRET") // краще з .env
     });
   }
 
-  async validate(payload: { userId: string }) {
+  async validate(payload: { userId: string; identityWay: string }) {
     if (!payload.userId) {
       throw new UnauthorizedException("Invalid refresh token");
     }
@@ -32,6 +33,6 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, "refresh") {
       throw new UnauthorizedException("User not found for the provided refresh token");
     }
 
-    return { userId: payload.userId };
+    return { userId: payload.userId, identityWay: payload.identityWay };
   }
 }

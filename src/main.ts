@@ -3,19 +3,23 @@ import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
-import { UnauthorizedExceptionFilter } from "./modules/auth/filters/unauthorized-exception.filter";
+
 import { bearerAuthConfig, PORT, swaggerOptions } from "./constants/appConfig.constants";
-import { AppLoggerService } from "./modules/logger/logger.service";
+import { LoggerService } from "./modules/logger/logger.service";
 import { UsersService } from "./modules/users/users.service";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
-import { PoliciesGuard } from "./casl/policies.guard";
-// import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
-import { CaslExceptionFilter } from "./casl/filters/casl-exception.filter";
+import { PoliciesGuard } from "./modules/casl/policies.guard";
+
+import { CaslExceptionFilter } from "./modules/casl/filters/casl-exception.filter";
+import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
+import { correlationMiddleware } from "./context/correlation.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const appLogger = app.get(AppLoggerService);
+  app.use(correlationMiddleware);
+
+  const appLogger = app.get(LoggerService);
   app.useLogger(appLogger);
 
   // Enable CORS
@@ -32,9 +36,8 @@ async function bootstrap() {
 
   app.useGlobalGuards(app.get(JwtAuthGuard), app.get(PoliciesGuard));
 
-  app.useGlobalFilters(new UnauthorizedExceptionFilter());
   app.useGlobalFilters(new CaslExceptionFilter());
-  // app.useGlobalFilters(new AllExceptionsFilter(appLogger));
+  app.useGlobalFilters(new AllExceptionsFilter(appLogger));
 
   const config = new DocumentBuilder()
     .setTitle("MarketPlace API")
@@ -54,10 +57,10 @@ async function bootstrap() {
   setInterval(
     () => {
       usersService.deleteUnverifiedUsers().catch((error: unknown) => {
-        appLogger.error(
-          "Error deleting unverified users:",
-          error instanceof Error ? error.message : String(error)
-        );
+        appLogger.error({
+          message: "Error deleting unverified users",
+          payload: error instanceof Error ? error.message : String(error)
+        });
       });
     },
     24 * 60 * 60 * 1000
