@@ -45,6 +45,10 @@ export class OtpService {
   async verify(phone: string, code: string) {
     // ⬇️ 1) якщо телефон уже підтверджений — повертаємо коректну reason
     const user = await this.usersService.findByPhone(phone);
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
+
     if (user?.isPhoneValidated) {
       return { ok: false, reason: "Phone already verified" };
     }
