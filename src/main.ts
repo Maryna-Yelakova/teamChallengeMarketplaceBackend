@@ -1,5 +1,4 @@
 import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import cookieParser from "cookie-parser";
@@ -13,9 +12,11 @@ import { PoliciesGuard } from "./modules/casl/policies.guard";
 import { CaslExceptionFilter } from "./modules/casl/filters/casl-exception.filter";
 import { AllExceptionsFilter } from "./modules/logger/exceptions/exceptions.filter";
 import { correlationMiddleware } from "./context/correlation.middleware";
+import { createAdminRootModule, mountAdminUi } from "./modules/admin/admin.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const AdminRootModule = await createAdminRootModule();
+  const app = await NestFactory.create(AdminRootModule);
 
   app.use(correlationMiddleware);
 
@@ -31,6 +32,7 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+  mountAdminUi(app);
 
   app.useGlobalPipes(new ValidationPipe());
 

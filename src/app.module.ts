@@ -20,7 +20,6 @@ import { PoliciesGuard } from "./modules/casl/policies.guard";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
 import { LoggerService } from "./modules/logger/logger.service";
 import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
-import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -55,9 +54,7 @@ import { AdminModule } from './modules/admin/admin.module';
     SubcategoriesModule,
     OtpModule,
 
-    CaslModule,
-
-    AdminModule
+    CaslModule
   ],
   controllers: [AppController],
   providers: [
