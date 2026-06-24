@@ -1,0 +1,60 @@
+import { User } from "../../entities/user.entity";
+import { Repository } from "typeorm";
+import { UpdateUsersDto } from "./dtos/update-user.dto";
+import { CreateUserDto } from "./dtos/create-user.dto";
+import { AppAbility } from "src/modules/casl/casl-ability.types";
+import { ChangePasswordDto } from "../auth/dtos/change-password.dto";
+import { LoggerService } from "../logger/logger.service";
+export declare class UsersService {
+    private usersRepo;
+    private readonly baseLogger;
+    private readonly logger;
+    constructor(usersRepo: Repository<User>, baseLogger: LoggerService);
+    create(createUserDto: CreateUserDto): Promise<User>;
+    findByEmail(email: string): Promise<User | null>;
+    findByPhone(phone: string): Promise<User | null>;
+    findById(id: string, ability: AppAbility): Promise<{
+        id: string;
+        firstName: string;
+        middleName?: string;
+        lastName?: string;
+        birthDay?: Date;
+        phone: string;
+        isPhoneValidated: boolean;
+        email: string;
+        isEmailValidated: boolean;
+        isSeller: boolean;
+        sellers: import("../../entities/seller.entity").Seller[];
+        addresses: import("../../entities/address.entity").Address[];
+        carts: import("../../entities/cart.entity").Cart[];
+        wishlists: import("../../entities/wishlist.entity").Wishlist[];
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    update(id: string, updateUserDto: Partial<UpdateUsersDto>, ability: AppAbility): Promise<User | undefined>;
+    markPhoneAsValidated(phone: string): Promise<User>;
+    markEmailAsValidated(email: string): Promise<User>;
+    delete(id: string, ability: AppAbility): Promise<void>;
+    changePhone(id: string, newPhone: string, ability: AppAbility): Promise<{
+        id: string;
+        firstName: string;
+        middleName?: string;
+        lastName?: string;
+        birthDay?: Date;
+        phone: string;
+        isPhoneValidated: boolean;
+        email: string;
+        isEmailValidated: boolean;
+        isSeller: boolean;
+        sellers: import("../../entities/seller.entity").Seller[];
+        addresses: import("../../entities/address.entity").Address[];
+        carts: import("../../entities/cart.entity").Cart[];
+        wishlists: import("../../entities/wishlist.entity").Wishlist[];
+        createdAt: Date;
+        updatedAt: Date;
+    } & User>;
+    changePassword(userId: string, dto: ChangePasswordDto, ability: AppAbility): Promise<{
+        message: string;
+    }>;
+    deleteUnverifiedUsers(): Promise<void>;
+}

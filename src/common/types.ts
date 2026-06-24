@@ -12,7 +12,7 @@ export type JwtPayload = {
 };
 
 export interface RequestWithUser extends Request {
-  user: JwtPayload;
+  user: Express.User & JwtPayload;
 }
 
 export interface RequestWithAuthUser extends Request {
