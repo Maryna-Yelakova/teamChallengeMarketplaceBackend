@@ -20,12 +20,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const status = exception instanceof HttpException ? exception.getStatus() : 500;
     const message = exception.message;
 
-    // this.logger.error({ message, payload: exception.stack, url: request.url });
-
+    // request.path excludes query values that may contain tokens or other secrets.
     this.logger.error({
       message,
       status,
-      path: request.url,
+      path: request.path,
       method: request.method,
       correlationId: request.headers["x-correlation-id"],
       stack: exception instanceof Error ? exception.stack : null
@@ -34,7 +33,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json({
       statusCode: status,
       message,
-      path: request.url,
+      path: request.path,
       timestamp: new Date().toISOString(),
       correlationId: response.getHeader("x-correlation-id")
     });

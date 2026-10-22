@@ -34,9 +34,8 @@ import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
         autoLoadEntities: true,
         synchronize: true,
 
+        // The custom logger controls which TypeORM events and fields are emitted.
         logger: new TypeOrmPinoLogger(logger),
-
-        logging: true,
         maxQueryExecutionTime: 200
       })
     }),
