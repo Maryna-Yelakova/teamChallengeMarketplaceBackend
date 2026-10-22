@@ -23,9 +23,11 @@ describe("SellersController", () => {
   /** Build a complete Seller result while allowing each test to override relevant fields. */
   const createSellerFixture = (overrides: Partial<Seller> = {}): Seller => ({
     id: "seller-id",
-    user: {} as Seller["user"],
+    user: { password: "hashed-password" } as Seller["user"],
     userId: "user-id",
     shopName: "Test Shop",
+    legalAddress: "Private legal address",
+    taxId: "private-tax-id",
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     products: [],
     reviews: [],
@@ -58,7 +60,19 @@ describe("SellersController", () => {
 
     sellersServiceMock.create.mockResolvedValue(seller);
 
-    await expect(controller.create(dto)).resolves.toEqual(seller);
+    const response = await controller.create(dto);
+    expect(response).toEqual({
+      id: seller.id,
+      userId: seller.userId,
+      shopName: seller.shopName,
+      phone: seller.phone,
+      description: seller.description,
+      createdAt: seller.createdAt
+    });
+    expect(JSON.stringify(response)).not.toContain("hashed-password");
+    expect(response).not.toHaveProperty("user");
+    expect(response).not.toHaveProperty("taxId");
+    expect(response).not.toHaveProperty("legalAddress");
     expect(sellersServiceMock.create).toHaveBeenCalledTimes(1);
     expect(sellersServiceMock.create).toHaveBeenCalledWith(dto);
   });
@@ -69,7 +83,17 @@ describe("SellersController", () => {
 
     sellersServiceMock.findOne.mockResolvedValue(seller);
 
-    await expect(controller.findOne(sellerId)).resolves.toEqual(seller);
+    const response = await controller.findOne(sellerId);
+    expect(response).toEqual({
+      id: seller.id,
+      userId: seller.userId,
+      shopName: seller.shopName,
+      phone: seller.phone,
+      description: seller.description,
+      createdAt: seller.createdAt
+    });
+    expect(JSON.stringify(response)).not.toContain("hashed-password");
+    expect(response).not.toHaveProperty("products");
     expect(sellersServiceMock.findOne).toHaveBeenCalledTimes(1);
     expect(sellersServiceMock.findOne).toHaveBeenCalledWith(sellerId);
   });

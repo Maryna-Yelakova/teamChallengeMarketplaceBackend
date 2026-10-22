@@ -57,14 +57,6 @@ describe("UsersController", () => {
     ...overrides
   });
 
-  /** Build the password-free shape returned by findById and changePhone. */
-  const createPublicUserFixture = (overrides: Partial<User> = {}): Omit<User, "password"> => {
-    const user = createUserFixture(overrides);
-    const result = { ...user } as Partial<User>;
-    delete result.password;
-    return result as Omit<User, "password">;
-  };
-
   /** Reset mock state and create a fresh controller for each test. */
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -76,10 +68,26 @@ describe("UsersController", () => {
   });
 
   it("returns a user by ID", async () => {
-    const user = createPublicUserFixture();
+    const user = createUserFixture();
     usersServiceMock.findById.mockResolvedValue(user);
 
-    await expect(controller.getUserById(user.id, ability)).resolves.toEqual(user);
+    const response = await controller.getUserById(user.id, ability);
+    expect(response).toEqual({
+      id: user.id,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+      birthDay: user.birthDay,
+      phone: user.phone,
+      isPhoneValidated: user.isPhoneValidated,
+      email: user.email,
+      isEmailValidated: user.isEmailValidated,
+      isSeller: user.isSeller,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+    expect(response).not.toHaveProperty("password");
+    expect(response).not.toHaveProperty("sellers");
     expect(usersServiceMock.findById).toHaveBeenCalledWith(user.id, ability);
   });
 
@@ -111,17 +119,22 @@ describe("UsersController", () => {
     const user = createUserFixture(dto);
     usersServiceMock.update.mockResolvedValue(user);
 
-    await expect(controller.updateUser(user.id, dto, ability)).resolves.toEqual(user);
+    const response = await controller.updateUser(user.id, dto, ability);
+    expect(response).toMatchObject({ id: user.id, firstName: "Grace" });
+    expect(response).not.toHaveProperty("password");
+    expect(response).not.toHaveProperty("addresses");
     expect(usersServiceMock.update).toHaveBeenCalledWith(user.id, dto, ability);
   });
 
   it("changes a phone and removes the password from the response", async () => {
     const dto: ChangePhoneDto = { newPhone: "+390000000002" };
     const user = createUserFixture({ phone: dto.newPhone });
-    const expected = createPublicUserFixture({ phone: dto.newPhone });
     usersServiceMock.changePhone.mockResolvedValue(user);
 
-    await expect(controller.changePhone(user.id, dto, ability)).resolves.toEqual(expected);
+    const response = await controller.changePhone(user.id, dto, ability);
+    expect(response).toMatchObject({ id: user.id, phone: dto.newPhone });
+    expect(response).not.toHaveProperty("password");
+    expect(response).not.toHaveProperty("wishlists");
     expect(usersServiceMock.changePhone).toHaveBeenCalledWith(user.id, dto.newPhone, ability);
   });
 

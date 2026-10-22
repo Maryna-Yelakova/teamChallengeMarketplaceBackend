@@ -42,7 +42,7 @@ export class AuthService {
       password: hash
     });
 
-    console.log(user);
+    // console.log(user);
 
     return { message: "User created", userId: user.id };
   }
