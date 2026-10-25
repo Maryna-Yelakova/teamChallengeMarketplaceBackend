@@ -1,4 +1,4 @@
-/** Unit tests for UsersService with persistence, logging, authorization, and hashing isolated. */
+/** Profile-service tests preserve existing behavior using active registration-state fixtures. */
 import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { getRepositoryToken } from "@nestjs/typeorm";
@@ -64,6 +64,10 @@ describe("UsersService", () => {
     isEmailValidated: false,
     password: "hashed-password",
     isSeller: false,
+    tokenVersion: 0,
+    registrationStatus: "ACTIVE",
+    registrationExpiresAt: null,
+    lastMeaningfulActivityAt: null,
     sellers: [],
     addresses: [],
     carts: [],
@@ -117,8 +121,8 @@ describe("UsersService", () => {
     await expect(
       service.create({
         firstName: user.firstName,
-        phone: user.phone,
-        email: user.email,
+        phone: user.phone!,
+        email: user.email!,
         password: user.password,
         isSeller: user.isSeller
       })
@@ -129,15 +133,15 @@ describe("UsersService", () => {
   it("finds a user by email", async () => {
     const user = createUserFixture();
     usersRepositoryMock.findOne.mockResolvedValue(user);
-    await expect(service.findByEmail(user.email)).resolves.toEqual(user);
-    expect(usersRepositoryMock.findOne).toHaveBeenCalledWith({ where: { email: user.email } });
+    await expect(service.findByEmail(user.email!)).resolves.toEqual(user);
+    expect(usersRepositoryMock.findOne).toHaveBeenCalledWith({ where: { email: user.email! } });
   });
 
   it("finds a user by phone", async () => {
     const user = createUserFixture();
     usersRepositoryMock.findOne.mockResolvedValue(user);
-    await expect(service.findByPhone(user.phone)).resolves.toEqual(user);
-    expect(usersRepositoryMock.findOne).toHaveBeenCalledWith({ where: { phone: user.phone } });
+    await expect(service.findByPhone(user.phone!)).resolves.toEqual(user);
+    expect(usersRepositoryMock.findOne).toHaveBeenCalledWith({ where: { phone: user.phone! } });
   });
 
   it("returns an authorized user without the password", async () => {
@@ -171,7 +175,7 @@ describe("UsersService", () => {
     usersRepositoryMock.findOne.mockResolvedValue(user);
     usersRepositoryMock.save.mockImplementation(value => Promise.resolve(value as User));
 
-    await expect(service.markPhoneAsValidated(user.phone)).resolves.toMatchObject({
+    await expect(service.markPhoneAsValidated(user.phone!)).resolves.toMatchObject({
       isPhoneValidated: true
     });
   });
@@ -181,7 +185,7 @@ describe("UsersService", () => {
     usersRepositoryMock.findOne.mockResolvedValue(user);
     usersRepositoryMock.save.mockImplementation(value => Promise.resolve(value as User));
 
-    await expect(service.markEmailAsValidated(user.email)).resolves.toMatchObject({
+    await expect(service.markEmailAsValidated(user.email!)).resolves.toMatchObject({
       isEmailValidated: true
     });
   });
@@ -225,19 +229,6 @@ describe("UsersService", () => {
     expect(hashPasswordMock).toHaveBeenCalledWith(dto.newPassword, 10);
     expect(usersRepositoryMock.save).toHaveBeenCalledWith(
       expect.objectContaining({ password: "new-hash" })
-    );
-  });
-
-  it("deletes users that remain unverified after two days", async () => {
-    usersRepositoryMock.delete.mockResolvedValue({ affected: 1, raw: [] });
-
-    await expect(service.deleteUnverifiedUsers()).resolves.toBeUndefined();
-    expect(usersRepositoryMock.delete).toHaveBeenCalledWith(
-      expect.objectContaining({
-        createdAt: expect.any(Object) as object,
-        isEmailValidated: false,
-        isPhoneValidated: false
-      })
     );
   });
 });

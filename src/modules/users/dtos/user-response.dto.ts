@@ -18,14 +18,16 @@ export class UserResponseDto {
   @ApiPropertyOptional({ type: String, format: "date-time", nullable: true })
   birthDay?: Date | null;
 
-  @ApiProperty()
-  phone: string;
+  /** A buyer may activate with only email, so the other contact can remain null. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  phone: string | null;
 
   @ApiProperty()
   isPhoneValidated: boolean;
 
-  @ApiProperty()
-  email: string;
+  /** A buyer may activate with only phone, so the other contact can remain null. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  email: string | null;
 
   @ApiProperty()
   isEmailValidated: boolean;

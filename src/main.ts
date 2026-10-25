@@ -2,11 +2,10 @@ import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 import { ValidationPipe } from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
-import cookieParser from "cookie-parser";
 
 import { bearerAuthConfig, PORT, swaggerOptions } from "./constants/appConfig.constants";
 import { LoggerService } from "./modules/logger/logger.service";
-import { UsersService } from "./modules/users/users.service";
+import { RegistrationService } from "./modules/registration/registration.service";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
 import { PoliciesGuard } from "./modules/casl/policies.guard";
 
@@ -30,8 +29,6 @@ async function bootstrap() {
     // allowedHeaders: ['Content-Type', 'Authorization', 'x-request-id', 'Accept', 'Origin', 'X-Requested-With'],
   });
 
-  app.use(cookieParser());
-
   app.useGlobalPipes(new ValidationPipe());
 
   app.useGlobalGuards(app.get(JwtAuthGuard), app.get(PoliciesGuard));
@@ -53,12 +50,13 @@ async function bootstrap() {
     swaggerOptions
   });
 
-  const usersService = app.get(UsersService);
+  // Expire pending sessions and release claims instead of deleting unverified users.
+  const registrationService = app.get(RegistrationService);
   setInterval(
     () => {
-      usersService.deleteUnverifiedUsers().catch((error: unknown) => {
+      registrationService.expirePendingRegistrations().catch((error: unknown) => {
         appLogger.error({
-          message: "Error deleting unverified users",
+          message: "Error expiring pending registrations",
           payload: error instanceof Error ? error.message : String(error)
         });
       });

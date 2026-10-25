@@ -29,14 +29,15 @@ export class User {
   @Column({ nullable: true })
   birthDay?: Date;
 
-  @Column()
-  phone: string;
+  /** Contacts stay nullable until registration promotes verified claims to the profile. */
+  @Column({ type: "varchar", nullable: true })
+  phone: string | null;
 
   @Column({ default: false })
   isPhoneValidated: boolean;
 
-  @Column({ unique: true })
-  email: string;
+  @Column({ type: "varchar", unique: true, nullable: true })
+  email: string | null;
 
   @Column({ default: false })
   isEmailValidated: boolean;
@@ -46,6 +47,22 @@ export class User {
 
   @Column({ default: false })
   isSeller: boolean;
+
+  /** Incremented on logout so previously issued refresh tokens are rejected. */
+  @Column({ type: "integer", default: 0 })
+  tokenVersion: number;
+
+  /** Legacy rows default to ACTIVE; new registrations explicitly begin pending. */
+  @Column({ type: "varchar", length: 32, default: "ACTIVE" })
+  registrationStatus: "PENDING_VERIFICATION" | "ACTIVE" | "EXPIRED";
+
+  /** Sliding 48-hour inactivity deadline for unfinished registrations. */
+  @Column({ type: "timestamptz", nullable: true })
+  registrationExpiresAt: Date | null;
+
+  /** Last registration action that constitutes meaningful progress. */
+  @Column({ type: "timestamptz", nullable: true })
+  lastMeaningfulActivityAt: Date | null;
 
   @OneToMany(() => Seller, seller => seller.user)
   sellers: Seller[];

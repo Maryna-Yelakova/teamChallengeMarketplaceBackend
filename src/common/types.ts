@@ -6,9 +6,13 @@ export interface AuthUser extends User {
   ability: AppAbility;
 }
 
+/** Token purpose separates pending registration, API access, and refresh sessions. */
 export type JwtPayload = {
   userId: string;
-  identityWay: IdentityWay;
+  identityWay?: IdentityWay;
+  tokenType?: "access" | "refresh" | "registration";
+  tokenVersion?: number;
+  tokenId?: string;
 };
 
 export interface RequestWithUser extends Request {

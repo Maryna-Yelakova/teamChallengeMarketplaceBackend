@@ -10,6 +10,7 @@ import { User } from "src/entities/user.entity";
 import { Repository } from "typeorm";
 //import { JwtPayload } from "src/common/types";
 
+/** Keeps pending-registration and refresh tokens out of protected application routes. */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
   constructor(
@@ -25,18 +26,32 @@ export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
     });
   }
 
-  async validate(payload: { userId: string; identityWay: IdentityWay; exp: number }) {
+  async validate(payload: {
+    userId: string;
+    identityWay?: IdentityWay;
+    tokenType?: string;
+    tokenVersion?: number;
+    exp: number;
+  }) {
     const now = Math.floor(Date.now() / 1000);
 
     if (payload.exp < now) {
       throw new UnauthorizedException("Access token has expired");
     }
 
+    if (payload.tokenType === "registration" || payload.tokenType === "refresh") {
+      throw new UnauthorizedException("Registration or refresh session is not an access token");
+    }
     const user = await this.usersRepo.findOneBy({ id: payload.userId });
     if (!user) {
       throw new UnauthorizedException("User not found");
     }
+    if (payload.tokenVersion !== undefined && user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedException("Access token has been revoked");
+    }
 
+    if (user.registrationStatus !== "ACTIVE")
+      throw new UnauthorizedException("Account is not active");
     if (user.isSeller) {
       if (!(user.isPhoneValidated && user.isEmailValidated)) {
         throw new UnauthorizedException("Please verify your email and phone number first");

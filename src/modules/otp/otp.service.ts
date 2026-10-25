@@ -1,157 +1,47 @@
-import { Injectable, Inject, BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import { SmsProvider, SMS_PROVIDER } from "../sms/sms.provider";
 import { EmailProvider, EMAIL_PROVIDER } from "../email/email.provider";
 import { OtpStore } from "./otp.store";
-import { UsersService } from "../users/users.service";
+import { RegistrationService } from "../registration/registration.service";
+import { RegistrationContactChannel } from "../../entities/registration-contact.entity";
 
-import { UpdateUsersDto } from "../users/dtos/update-user.dto";
-
-export interface UpdatePhoneEmailDto extends UpdateUsersDto {
-  isPhoneValidated?: boolean;
-  isEmailValidated?: boolean;
-}
-
+/** Binds each challenge to one registration, contact, and channel before granting ownership. */
 @Injectable()
 export class OtpService {
   constructor(
-    @Inject(SMS_PROVIDER) private sms: SmsProvider,
-    @Inject(EMAIL_PROVIDER) private email: EmailProvider,
-    private store: OtpStore,
-    private usersService: UsersService
+    @Inject(SMS_PROVIDER) private readonly sms: SmsProvider,
+    @Inject(EMAIL_PROVIDER) private readonly email: EmailProvider,
+    private readonly store: OtpStore,
+    private readonly registrations: RegistrationService
   ) {}
+
+  async send(userId: string, channel: RegistrationContactChannel) {
+    const { contact } = await this.registrations.sendChallenge(userId, channel);
+    const key = this.key(userId, channel, contact.normalizedValue);
+    const limit = this.store.canSend(key);
+    if (!limit.ok) throw new BadRequestException("Unable to send verification code at this time");
+    const code = process.env.NODE_ENV === "development" ? "000000" : this.genCode();
+    this.store.set(key, code);
+    if (channel === "phone") await this.sms.sendOtp(contact.value, code);
+    else await this.email.sendOtp(contact.value, code);
+    return { ok: true, devHint: process.env.NODE_ENV === "development" ? code : undefined };
+  }
+
+  async verify(userId: string, channel: RegistrationContactChannel, code: string) {
+    const { contact } = await this.registrations.sendChallenge(userId, channel);
+    const key = this.key(userId, channel, contact.normalizedValue);
+    const result = this.store.verify(key, code);
+    if (!result.ok) return { ok: false, message: "Unable to verify code. Check it and try again." };
+    const session = await this.registrations.verify(userId, channel);
+    return { ok: true, ...session };
+  }
 
   private genCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  async send(phone: string) {
-    const ok = this.store.canSend(phone);
-    if (!ok.ok) {
-      // ⬇️ щоб не перетворюватися на 500 Internal Server Error
-      throw new BadRequestException(ok.reason);
-    }
-
-    const code = process.env.NODE_ENV === "development" ? "000000" : this.genCode();
-
-    this.store.set(phone, code);
-    await this.sms.sendOtp(phone, code);
-
-    return {
-      ok: true,
-      devHint: process.env.NODE_ENV === "development" ? code : undefined
-    };
-  }
-
-  async verify(phone: string, code: string) {
-    // ⬇️ 1) якщо телефон уже підтверджений — повертаємо коректну reason
-    const user = await this.usersService.findByPhone(phone);
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-
-    if (user?.isPhoneValidated) {
-      return { ok: false, reason: "Phone already verified" };
-    }
-
-    // ⬇️ 2) стандартна перевірка з тимчасового сховища
-    const res = this.store.verify(phone, code);
-
-    // ⬇️ 3) (опційно) робимо reason більш зрозумілою, ніж "No code"
-    if (!res.ok && res.reason === "No code") {
-      return { ok: false, reason: "Code not found (expired or not requested)" };
-    }
-
-    return res;
-  }
-
-  async markPhoneAsValidated(phone: string) {
-    const user = await this.usersService.findByPhone(phone);
-    if (user && !user.isPhoneValidated) {
-      // const updateData: UpdatePhoneEmailDto = { isPhoneValidated: true };
-      await this.usersService.markPhoneAsValidated(phone);
-    }
-  }
-
-  async sendEmail(email: string) {
-    const ok = this.store.canSend(email);
-    if (!ok.ok) {
-      throw new BadRequestException(ok.reason);
-    }
-
-    const code = process.env.NODE_ENV === "development" ? "000000" : this.genCode();
-
-    this.store.set(email, code);
-    await this.email.sendOtp(email, code);
-
-    return {
-      ok: true,
-      devHint: process.env.NODE_ENV === "development" ? code : undefined
-    };
-  }
-
-  async verifyEmail(email: string, code: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
-    if (user?.isEmailValidated) {
-      return { ok: false, reason: "Email already verified" };
-    }
-
-    const res = this.store.verify(email, code);
-
-    if (!res.ok && res.reason === "No code") {
-      return { ok: false, reason: "Code not found (expired or not requested)" };
-    }
-
-    return res;
-  }
-
-  async markEmailAsValidated(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (user && !user.isEmailValidated) {
-      // const updateData: UpdatePhoneEmailDto = { isEmailValidated: true };
-      await this.usersService.markEmailAsValidated(email);
-    }
+  /** Different registrations or replacement contacts cannot reuse each other's code. */
+  private key(userId: string, channel: RegistrationContactChannel, normalizedValue: string) {
+    return `${userId}:${channel}:${normalizedValue}`;
   }
 }
-
-// import { Injectable, Inject } from '@nestjs/common';
-// import { SmsProvider, SMS_PROVIDER } from '../sms/sms.provider';
-// import { OtpStore } from './otp.store';
-// import { UsersService } from '../users/users.service';
-
-// @Injectable()
-// export class OtpService {
-//   constructor(
-//     @Inject(SMS_PROVIDER) private sms: SmsProvider,
-//     private store: OtpStore,
-//     private usersService: UsersService
-//   ) {}
-
-//   private genCode() { return Math.floor(100000 + Math.random()*900000).toString(); }
-
-//   async send(phone: string) {
-//     const ok = this.store.canSend(phone);
-//     if (!ok.ok) throw new Error(ok.reason);
-//     const code = process.env.NODE_ENV === 'development' ? '000000' : this.genCode();
-//     this.store.set(phone, code);
-//     await this.sms.sendOtp(phone, code);
-//     return {
-//       ok: true,
-//       devHint: process.env.NODE_ENV === 'development' ? code : undefined
-//     };
-//   }
-
-//   async verify(phone: string, code: string) {
-//     const res = this.store.verify(phone, code);
-//     return res;
-//   }
-
-//   async markPhoneAsValidated(phone: string) {
-//     const user = await this.usersService.findByPhone(phone);
-//     if (user) {
-//       await this.usersService.update(user.id, { isPhoneValidated: true });
-//     }
-//   }
-// }

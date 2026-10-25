@@ -1,53 +1,24 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-  NotFoundException
-} from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { UsersService } from "../users/users.service";
 import { CreateUserDto } from "src/modules/users/dtos/create-user.dto";
 
-import { ConfigService } from "@nestjs/config";
 import type { Request, Response } from "express";
-import { IdentityWay, JwtPayload } from "../../common/types";
-import { setCookie } from "src/common/utils";
+import { RegistrationService } from "../registration/registration.service";
 
+/** Handles password login; registration and token rotation share one session service. */
 @Injectable()
 export class AuthService {
-  private JWT_ACCESS_TOKEN_TTL: string;
-  private JWT_REFRESH_TOKEN_TTL: string;
-
   constructor(
     private usersService: UsersService,
-    private jwtService: JwtService,
-    private configService: ConfigService
-  ) {
-    this.JWT_ACCESS_TOKEN_TTL = configService.getOrThrow<string>("JWT_ACCESS_TOKEN_TTL");
-    this.JWT_REFRESH_TOKEN_TTL = configService.getOrThrow<string>("JWT_REFRESH_TOKEN_TTL");
+    private registrations: RegistrationService
+  ) {}
+
+  async register(_res: Response, dto: CreateUserDto) {
+    return this.registrations.start(dto);
   }
 
-  async register(res: Response, dto: CreateUserDto) {
-    const existing = await this.usersService.findByEmail(dto.email);
-    if (existing) throw new ConflictException("Email already in use");
-
-    const existingPhone = await this.usersService.findByPhone(dto.phone);
-    if (existingPhone) throw new ConflictException("Phone number already in use");
-
-    const hash = await bcrypt.hash(dto.password, 10);
-
-    const user = await this.usersService.create({
-      ...dto,
-      password: hash
-    });
-
-    // console.log(user);
-
-    return { message: "User created", userId: user.id };
-  }
-
-  async login(res: Response, identityString: string, password: string) {
+  async login(_res: Response, identityString: string, password: string) {
     const user = await this.validateUser(identityString, password);
     if (!user) throw new UnauthorizedException();
 
@@ -63,48 +34,33 @@ export class AuthService {
     return {
       isPhoneValidated: user.isPhoneValidated,
       isEmailValidated: user.isEmailValidated,
-      accessToken: this.auth(res, user.id, identityString.includes("@") ? "email" : "phone")
+      ...(await this.registrations.session(user))
     };
   }
 
-  logout(res: Response) {
-    setCookie(res, "", new Date(0));
+  async logout(_res: Response, userId: string) {
+    await this.registrations.revokeSessions(userId);
     return { message: "Logged out successfully" };
   }
 
-  refresh(userId: string, res: Response) {
-    return { accessToken: this.auth(res, userId) };
+  async refresh(userId: string, tokenId: string) {
+    return this.registrations.rotateRefreshSession(userId, tokenId);
   }
 
   async validateUser(identityString: string, pass: string) {
     const user = identityString.includes("@")
-      ? await this.usersService.findByEmail(identityString)
-      : await this.usersService.findByPhone(identityString);
-    if (!user) {
-      throw new NotFoundException("User not found");
-    }
+      ? await this.usersService.findByEmail(identityString.trim().toLowerCase())
+      : await this.usersService.findByPhone(identityString.trim());
+    if (!user || user.registrationStatus !== "ACTIVE")
+      throw new UnauthorizedException("Invalid credentials");
 
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
-      throw new UnauthorizedException("Email or password wrong");
+      throw new UnauthorizedException("Invalid credentials");
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
 
     return result;
-  }
-
-  private auth(res: Response, id: string, identityWay: IdentityWay = "email") {
-    const { access_token, refresh_token } = this.generateTokens(id, identityWay);
-    setCookie(res, refresh_token, new Date(Date.now() + 1000 * 60 * 60 * 24));
-    return access_token;
-  }
-
-  private generateTokens(userId: string, identityWay: IdentityWay) {
-    const payload: JwtPayload = { userId, identityWay };
-    return {
-      access_token: this.jwtService.sign(payload, { expiresIn: this.JWT_ACCESS_TOKEN_TTL }),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: this.JWT_REFRESH_TOKEN_TTL })
-    };
   }
 }

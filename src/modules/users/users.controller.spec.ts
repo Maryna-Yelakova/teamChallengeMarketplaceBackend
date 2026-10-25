@@ -1,4 +1,4 @@
-/** Unit tests for UsersController with UsersService isolated by a typed mock. */
+/** Profile-controller tests use active-account fixtures with the new registration metadata. */
 import { Test, TestingModule } from "@nestjs/testing";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
@@ -48,6 +48,10 @@ describe("UsersController", () => {
     isEmailValidated: false,
     password: "hashed-password",
     isSeller: false,
+    tokenVersion: 0,
+    registrationStatus: "ACTIVE",
+    registrationExpiresAt: null,
+    lastMeaningfulActivityAt: null,
     sellers: [],
     addresses: [],
     carts: [],
@@ -95,8 +99,8 @@ describe("UsersController", () => {
     const user = createUserFixture();
     usersServiceMock.findByEmail.mockResolvedValue(user);
 
-    await expect(controller.isEmailPresent(user.email)).resolves.toEqual({ isPresent: true });
-    expect(usersServiceMock.findByEmail).toHaveBeenCalledWith(user.email);
+    await expect(controller.isEmailPresent(user.email!)).resolves.toEqual({ isPresent: true });
+    expect(usersServiceMock.findByEmail).toHaveBeenCalledWith(user.email!);
   });
 
   it("reports when a phone is absent", async () => {

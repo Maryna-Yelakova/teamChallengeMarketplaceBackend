@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { User } from "../../entities/user.entity";
-import { LessThan, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import { UpdateUsersDto } from "./dtos/update-user.dto";
 
 import { BadRequestException } from "@nestjs/common";
@@ -19,6 +19,7 @@ import { ContextLogger } from "../logger/types/logger.types";
 // import { Action } from "src/casl/casl-ability.types";
 // import { ForbiddenError } from "@casl/ability";
 
+/** Profile operations; pending-account expiry and claim release live in RegistrationService. */
 @Injectable()
 export class UsersService {
   private readonly logger: ContextLogger;
@@ -145,14 +146,5 @@ export class UsersService {
     await this.usersRepo.save(user);
 
     return { message: "Password changed successfully" };
-  }
-
-  async deleteUnverifiedUsers() {
-    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
-    await this.usersRepo.delete({
-      createdAt: LessThan(twoDaysAgo),
-      isEmailValidated: false,
-      isPhoneValidated: false
-    });
   }
 }
