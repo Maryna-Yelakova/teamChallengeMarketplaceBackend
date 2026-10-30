@@ -7,6 +7,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:run": "yarn typeorm migration:run -d src/data-source.ts",
+    "migration:revert": "yarn typeorm migration:revert -d src/data-source.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -34,6 +37,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "mysql2": "^3.14.1",
     "nest-winston": "^1.10.2",

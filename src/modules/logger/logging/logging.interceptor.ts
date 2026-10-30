@@ -4,6 +4,7 @@ import { Request } from "express";
 
 import { LoggerService } from "../logger.service";
 import { ContextLogger } from "../types/logger.types";
+import { redactSensitiveData } from "../redact-sensitive-data";
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -16,33 +17,27 @@ export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>();
 
-    const { method, url, body, query } = req as {
-      method: string;
-      url: string;
-      body?: unknown;
-      query?: unknown;
-    };
-
+    const { method } = req;
+    // The raw URL includes query values; log the path and sanitized fields separately.
+    const path = req.path;
     const start = Date.now();
 
     this.logger.info({
       message: "HTTP Request",
       method,
-      url,
-      body,
-      query
+      path,
+      body: redactSensitiveData(req.body),
+      query: redactSensitiveData(req.query)
     });
 
     return next.handle().pipe(
       tap({
         next: () => {
-          const duration = Date.now() - start;
-
           this.logger.info({
             message: "HTTP Response",
             method,
-            url,
-            duration
+            path,
+            duration: Date.now() - start
           });
         }
       })

@@ -29,6 +29,7 @@ import { AppAbility } from "src/modules/casl/casl-ability.types";
 import { Ability } from "src/modules/casl/decorators/ability.decorator";
 import { RequestWithUser } from "src/common/types";
 import { ChangePasswordDto } from "../auth/dtos/change-password.dto";
+import { UserResponseDto, toUserResponse } from "./dtos/user-response.dto";
 
 @ApiTags("Users")
 @Controller("users")
@@ -39,18 +40,7 @@ export class UsersController {
   @ApiOperation({ summary: "Get user by ID" })
   @ApiOkResponse({
     description: "User found successfully",
-    schema: {
-      type: "object",
-      properties: {
-        id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
-        firstName: { type: "string", example: "Василь" },
-        email: { type: "string", example: "basilbasilyuk@mail.gov" },
-        phone: { type: "string", example: "+380991234567" },
-        isPhoneValidated: { type: "boolean", example: false },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" }
-      }
-    }
+    type: UserResponseDto
   })
   @ApiNotFoundResponse({
     description: "User not found",
@@ -82,7 +72,8 @@ export class UsersController {
     example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
   async getUserById(@Param("id") id: string, @Ability() ability: AppAbility) {
-    return await this.UsersService.findById(id, ability);
+    const user = await this.UsersService.findById(id, ability);
+    return toUserResponse(user);
   }
 
   @Get("iep")
@@ -159,18 +150,7 @@ export class UsersController {
   @ApiOperation({ summary: "Update a specific user" })
   @ApiOkResponse({
     description: "User updated successfully",
-    schema: {
-      type: "object",
-      properties: {
-        id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
-        firstName: { type: "string", example: "Василь" },
-        email: { type: "string", example: "basilbasilyuk@mail.gov" },
-        phone: { type: "string", example: "+380991234567" },
-        isPhoneValidated: { type: "boolean", example: false },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" }
-      }
-    }
+    type: UserResponseDto
   })
   @ApiNotFoundResponse({
     description: "User not found",
@@ -217,25 +197,15 @@ export class UsersController {
     @Body() updateUserDto: UpdateUsersDto,
     @Ability() ability: AppAbility
   ) {
-    return await this.UsersService.update(id, updateUserDto, ability);
+    const user = await this.UsersService.update(id, updateUserDto, ability);
+    return user ? toUserResponse(user) : undefined;
   }
 
   @Patch(":id/change-phone")
   @ApiOperation({ summary: "Change user's phone number" })
   @ApiOkResponse({
     description: "Phone number changed successfully",
-    schema: {
-      type: "object",
-      properties: {
-        id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
-        firstName: { type: "string", example: "Василь" },
-        email: { type: "string", example: "basilbasilyuk@mail.gov" },
-        phone: { type: "string", example: "+380501234567" },
-        isPhoneValidated: { type: "boolean", example: false },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" }
-      }
-    }
+    type: UserResponseDto
   })
   @ApiNotFoundResponse({
     description: "User not found",
@@ -287,10 +257,7 @@ export class UsersController {
     @Ability() ability: AppAbility
   ) {
     const updatedUser = await this.UsersService.changePhone(id, changePhoneDto.newPhone, ability);
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...result } = updatedUser;
-    return result;
+    return toUserResponse(updatedUser);
   }
 
   @ApiOperation({ summary: "Change user password" })

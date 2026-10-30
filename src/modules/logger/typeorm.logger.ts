@@ -1,69 +1,54 @@
-import { Logger as TypeOrmLogger, QueryRunner } from "typeorm";
+import { Logger as TypeOrmLogger } from "typeorm";
 import { LoggerService } from "./logger.service";
 
+/** Avoids recording SQL and bound values, which may contain private data. */
 export class TypeOrmPinoLogger implements TypeOrmLogger {
   constructor(private readonly logger: LoggerService) {}
 
-  logQuery(query: string, parameters?: unknown[], queryRunner?: QueryRunner) {
-    this.logger.debug({
-      context: "TypeORM",
-      message: "SQL Query",
-      query,
-      parameters,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
-    });
+  logQuery(): void {
+    // TypeORM calls this for every query; routine statements are intentionally skipped.
   }
 
-  logQueryError(error: string, query: string, parameters?: unknown[], queryRunner?: QueryRunner) {
+  logQueryError(): void {
+    // A fixed message avoids copying SQL or driver error text into logs.
     this.logger.error({
       context: "TypeORM",
-      message: "SQL Error",
-      error,
-      query,
-      parameters,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
+      message: "SQL query failed"
     });
   }
 
-  logQuerySlow(time: number, query: string, parameters?: unknown[], queryRunner?: QueryRunner) {
+  logQuerySlow(time: number): void {
+    // Duration is useful for diagnosis without exposing the query or its values.
     this.logger.warn({
       context: "TypeORM",
-      message: "Slow Query",
-      duration: time,
-      query,
-      parameters,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
+      message: "Slow SQL query",
+      durationMs: time
     });
   }
 
-  logSchemaBuild(message: string, queryRunner?: QueryRunner) {
+  logSchemaBuild(): void {
+    // Schema messages can contain raw SQL; record only the event.
     this.logger.info({
       context: "TypeORM",
-      message: "Schema build",
-      details: message,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
+      message: "Schema build event"
     });
   }
 
-  logMigration(message: string, queryRunner?: QueryRunner) {
+  logMigration(): void {
+    // Migration details may include SQL or values; omit the supplied text.
     this.logger.info({
       context: "TypeORM",
-      message: "Migration",
-      details: message,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
+      message: "Migration event"
     });
   }
 
-  log(level: "log" | "info" | "warn", message: unknown, queryRunner?: QueryRunner) {
-    const logInfo = {
-      context: "TypeORM",
-      message,
-      queryRunner: queryRunner ? queryRunner.connection.metadataTableName : "default"
-    };
-    if (level === "log" || level === "info") {
-      this.logger.info(logInfo);
-    } else {
-      this.logger.warn(logInfo);
+  log(level: "log" | "info" | "warn"): void {
+    // Preserve the severity without forwarding TypeORM's free-form message.
+    if (level === "warn") {
+      this.logger.warn({ context: "TypeORM", message: "TypeORM warning" });
+      return;
     }
+
+    this.logger.info({ context: "TypeORM", message: "TypeORM event" });
   }
 }

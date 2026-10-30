@@ -13,13 +13,16 @@ import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { CaslModule } from "src/modules/casl/casl.module";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "src/entities/user.entity";
+import { RefreshTokenSession } from "src/entities/refresh-token-session.entity";
+import { RegistrationModule } from "../registration/registration.module";
 
+/** Shares registration rules and persisted refresh sessions with authentication. */
 @Module({
   imports: [
     PassportModule,
     UsersModule,
     ConfigModule.forRoot(),
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, RefreshTokenSession]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: {
@@ -30,7 +33,8 @@ import { User } from "src/entities/user.entity";
         ignoreExpiration: false
       }
     }),
-    CaslModule
+    CaslModule,
+    RegistrationModule
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy, JwtRefreshStrategy, JwtAuthGuard],
   controllers: [AuthController],

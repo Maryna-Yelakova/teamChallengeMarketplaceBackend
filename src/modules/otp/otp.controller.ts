@@ -1,254 +1,43 @@
-import { Body, Controller, Post, HttpCode } from "@nestjs/common";
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBody,
-  ApiCreatedResponse,
-  ApiOkResponse,
-  ApiBadRequestResponse,
-  ApiConsumes,
-  ApiProduces,
-  ApiTooManyRequestsResponse,
-  getSchemaPath,
-  ApiBearerAuth
-} from "@nestjs/swagger";
-
-import { SendOtpDto } from "./dtos/send-otp.dto";
-import { VerifyOtpDto } from "./dtos/verify-otp.dto";
-import { SendEmailOtpDto } from "./dtos/send-email-otp.dto";
-import { VerifyEmailOtpDto } from "./dtos/verify-email-otp.dto";
-import { SendOtpResponseDto } from "./dtos/send-otp.response";
-import { VerifyOtpResponseDto } from "./dtos/verify-otp.response";
-import { OtpService } from "./otp.service";
-
+import { Body, Controller, HttpCode, Post, Req, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { Request } from "express";
 import { Public } from "../auth/decorators/public.decorator";
+import { JwtRegistrationGuard } from "../registration/registration.guard";
+import { OtpService } from "./otp.service";
+import { VerifyOtpDto } from "./dtos/verify-otp.dto";
+import { VerifyEmailOtpDto } from "./dtos/verify-email-otp.dto";
 
+/** Resolves the registration from its scoped token rather than a client-supplied user ID. */
 @ApiTags("Otp")
+@ApiBearerAuth("JWT-auth")
 @Controller("otp")
 @Public()
+@UseGuards(JwtRegistrationGuard)
 export class OtpController {
-  constructor(private otp: OtpService) {}
+  constructor(private readonly otp: OtpService) {}
 
   @Post("phone/send")
-  @ApiOperation({ summary: "Надіслати OTP на телефон", operationId: "sendPhoneOtp" })
-  @ApiConsumes("application/json")
-  @ApiProduces("application/json")
-  @ApiBody({ type: SendOtpDto })
-
-  // -------- Optional Parameters (will show up in "Parameters") --------
-  @ApiCreatedResponse({
-    description: "OTP успішно відправлено",
-    content: {
-      "application/json": {
-        schema: { $ref: getSchemaPath(SendOtpResponseDto) },
-        examples: {
-          dev: { value: { ok: true, devHint: "000000" } },
-          prod: { value: { ok: true, message: "OTP sent to +380931234567" } }
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: "Некоректний телефон або інша помилка запиту",
-    content: {
-      "application/json": {
-        examples: {
-          badPhone: {
-            value: {
-              statusCode: 400,
-              message: "Phone must be in international format",
-              error: "Bad Request"
-            }
-          },
-          limit: {
-            value: {
-              statusCode: 400,
-              message: "Too many requests, try later",
-              error: "Bad Request"
-            }
-          }
-        }
-      }
-    }
-  })
-  @ApiTooManyRequestsResponse({
-    description: "Rate limit перевищено",
-    content: {
-      "application/json": {
-        example: { statusCode: 429, message: "Too many requests", error: "Too Many Requests" }
-      }
-    }
-  })
-  send(
-    @Body() dto: SendOtpDto
-    // @Query('channel') _channel?: 'sms' | 'call',
-    // @Query('lang') _lang?: string,
-    // @Headers('x-request-id') _reqId?: string,
-  ) {
-    return this.otp.send(dto.phone); // dev: { ok:true, devHint:'000000' }
+  send(@Req() request: Request & { user: { userId: string } }) {
+    return this.otp.send(request.user.userId, "phone");
   }
 
   @Post("phone/verify")
-  @ApiOperation({ summary: "Перевірити OTP код", operationId: "verifyPhoneOtp" })
-  @ApiConsumes("application/json")
-  @ApiProduces("application/json")
-  @ApiBody({ type: VerifyOtpDto })
-  // @ApiBearerAuth("JWT-auth")
   @HttpCode(200)
-  @ApiOkResponse({
-    description: "Результат перевірки OTP",
-    content: {
-      "application/json": {
-        schema: { $ref: getSchemaPath(VerifyOtpResponseDto) },
-        examples: {
-          success: { value: { ok: true } },
-          alreadyVerified: { value: { ok: false, reason: "Phone already verified" } },
-          invalid: { value: { ok: false, reason: "Invalid code" } },
-          notFound: { value: { ok: false, reason: "Phone not found" } },
-          expired: { value: { ok: false, reason: "Code not found (expired or not requested)" } }
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: "Помилка валідації (DTO) або бізнес-логіки",
-    content: {
-      "application/json": {
-        examples: {
-          badPhone: {
-            value: {
-              statusCode: 400,
-              message: "Phone must be in international format",
-              error: "Bad Request"
-            }
-          },
-          badCode: {
-            value: { statusCode: 400, message: ["code must be 6 characters"], error: "Bad Request" }
-          }
-        }
-      }
-    }
-  })
-  async verify(@Body() dto: VerifyOtpDto) {
-    const res = await this.otp.verify(dto.phone, dto.code);
-    if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markPhoneAsValidated(dto.phone);
-    return { ok: true };
+  verify(@Req() request: Request & { user: { userId: string } }, @Body() dto: VerifyOtpDto) {
+    return this.otp.verify(request.user.userId, "phone", dto.code);
   }
 
   @Post("email/send")
-  @ApiOperation({ summary: "Send OTP to email", operationId: "sendEmailOtp" })
-  @ApiConsumes("application/json")
-  @ApiProduces("application/json")
-  @ApiBody({ type: SendEmailOtpDto })
-  @ApiBearerAuth("JWT-auth")
-  @ApiCreatedResponse({
-    description: "OTP successfully sent to email",
-    content: {
-      "application/json": {
-        schema: { $ref: getSchemaPath(SendOtpResponseDto) },
-        examples: {
-          dev: { value: { ok: true, devHint: "000000" } },
-          prod: { value: { ok: true, message: "OTP sent to user@example.com" } }
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: "Invalid email or other request error",
-    content: {
-      "application/json": {
-        examples: {
-          badEmail: {
-            value: {
-              statusCode: 400,
-              message: "Must be a valid email address",
-              error: "Bad Request"
-            }
-          },
-          limit: {
-            value: {
-              statusCode: 400,
-              message: "Too many requests, try later",
-              error: "Bad Request"
-            }
-          }
-        }
-      }
-    }
-  })
-  sendEmail(@Body() dto: SendEmailOtpDto) {
-    return this.otp.sendEmail(dto.email);
+  sendEmail(@Req() request: Request & { user: { userId: string } }) {
+    return this.otp.send(request.user.userId, "email");
   }
 
   @Post("email/verify")
-  @ApiOperation({ summary: "Verify OTP code for email", operationId: "verifyEmailOtp" })
-  @ApiConsumes("application/json")
-  @ApiProduces("application/json")
-  @ApiBody({ type: VerifyEmailOtpDto })
-  @ApiBearerAuth("JWT-auth")
   @HttpCode(200)
-  @ApiOkResponse({
-    description: "Email OTP verification result",
-    content: {
-      "application/json": {
-        schema: { $ref: getSchemaPath(VerifyOtpResponseDto) },
-        examples: {
-          success: { value: { ok: true } },
-          alreadyVerified: { value: { ok: false, reason: "Email already verified" } },
-          invalid: { value: { ok: false, reason: "Invalid code" } },
-          expired: { value: { ok: false, reason: "Code not found (expired or not requested)" } }
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: "Validation error (DTO) or business logic error",
-    content: {
-      "application/json": {
-        examples: {
-          badEmail: {
-            value: {
-              statusCode: 400,
-              message: "Must be a valid email address",
-              error: "Bad Request"
-            }
-          },
-          badCode: {
-            value: { statusCode: 400, message: ["code must be 6 characters"], error: "Bad Request" }
-          }
-        }
-      }
-    }
-  })
-  async verifyEmail(@Body() dto: VerifyEmailOtpDto) {
-    const res = await this.otp.verifyEmail(dto.email, dto.code);
-    if (!res.ok) return { ok: false, reason: res.reason };
-    await this.otp.markEmailAsValidated(dto.email);
-    return { ok: true, reason: res.reason };
+  verifyEmail(
+    @Req() request: Request & { user: { userId: string } },
+    @Body() dto: VerifyEmailOtpDto
+  ) {
+    return this.otp.verify(request.user.userId, "email", dto.code);
   }
 }
-
-// import { Body, Controller, Post } from '@nestjs/common';
-// import { SendOtpDto } from './dtos/send-otp.dto';
-// import { VerifyOtpDto } from './dtos/verify-otp.dto';
-// import { OtpService } from './otp.service';
-
-// @Controller('auth/phone')
-// export class OtpController {
-//   constructor(private otp: OtpService) {}
-
-//   @Post('send')
-//   send(@Body() dto: SendOtpDto) {
-//     return this.otp.send(dto.phone); // у dev поверне { devHint: '000000' }
-//   }
-
-//   @Post('verify')
-//   async verify(@Body() dto: VerifyOtpDto) {
-//     const res = await this.otp.verify(dto.phone, dto.code);
-//     if (!res.ok) return { ok:false, reason:res.reason };
-
-//     await this.otp.markPhoneAsValidated(dto.phone);
-//     return { ok:true };
-//   }
-// }

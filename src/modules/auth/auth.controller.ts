@@ -7,10 +7,12 @@ import {
   // ApiResponse,
   ApiBadRequestResponse,
   ApiCreatedResponse,
+  ApiConflictResponse,
   ApiOkResponse,
   ApiUnauthorizedResponse,
   ApiBearerAuth,
-  ApiTags
+  ApiTags,
+  ApiBody
 } from "@nestjs/swagger";
 
 import type { Request, Response } from "express";
@@ -26,6 +28,7 @@ import { User } from "src/entities/user.entity";
 
 // import { LocalAuthGuard } from "./local-auth.guard";
 
+/** Mobile auth returns JSON tokens and the backend's current registration state. */
 @ApiTags("Auth")
 @CheckPolicies((ability: AppAbility) => ability.can(Action.Read, User))
 @Controller("auth")
@@ -34,40 +37,49 @@ export class AuthController {
 
   @ApiOperation({ summary: "Register new user" })
   @ApiCreatedResponse({
-    description: "User successfully registered",
+    description:
+      "Pending registration session created; save the refresh token securely on the mobile device",
     schema: {
       type: "object",
       properties: {
-        id: { type: "string", format: "uuid", example: "181fe998-8066-41e1-989b-71cd9a085a55" },
-        firstName: { type: "string", example: "Василь" },
-        email: { type: "string", example: "basilbasilyuk@mail.gov" },
-        phone: { type: "string", example: "+380991234567" },
-        isSeller: { type: "boolean", example: false },
-        createdAt: { type: "string", format: "date-time" },
-        updatedAt: { type: "string", format: "date-time" }
+        userId: { type: "string", format: "uuid" },
+        accessToken: { type: "string" },
+        refreshToken: { type: "string" },
+        registrationState: {
+          type: "object",
+          description: "Current verification state and next action"
+        }
       }
     }
   })
   @ApiBadRequestResponse({
-    description: "Validation error or user already exists",
+    description: "Registration form validation error",
     schema: {
       type: "object",
       properties: {
         statusCode: { type: "number", example: 400 },
         message: {
-          oneOf: [
-            { type: "string", example: "User with this email already exists" },
-            {
-              type: "array",
-              items: { type: "string" },
-              example: [
-                "email must be an email",
-                "password must be longer than or equal to 6 characters"
-              ]
-            }
+          type: "array",
+          items: { type: "string" },
+          example: [
+            "email must be an email",
+            "password must be longer than or equal to 6 characters"
           ]
         },
         error: { type: "string", example: "Bad Request" }
+      }
+    }
+  })
+  @ApiConflictResponse({
+    description: "Verified contacts already belong to another account; no pending user is created",
+    schema: {
+      type: "object",
+      properties: {
+        code: { type: "string", example: "CONTACT_ALREADY_IN_USE" },
+        fieldErrors: {
+          type: "object",
+          example: { email: ["This contact is already linked to another account."] }
+        }
       }
     }
   })
@@ -85,34 +97,21 @@ export class AuthController {
       properties: {
         isPhoneValidated: { type: "boolean", example: false },
         isEmailValidated: { type: "boolean", example: false },
-        accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        userId: { type: "string", format: "uuid" },
+        accessToken: { type: "string" },
+        refreshToken: { type: "string" },
+        registrationState: { type: "object" }
       }
     }
   })
   @ApiUnauthorizedResponse({
-    description: "Invalid credentials or unverified phone/email",
+    description: "Invalid credentials",
     content: {
       "application/json": {
         examples: {
           invalidCredentials: {
             summary: "Invalid credentials",
             value: { statusCode: 401, message: "Invalid credentials", error: "Unauthorized" }
-          },
-          phoneNotVerified: {
-            summary: "Phone not verified",
-            value: {
-              statusCode: 401,
-              message: "Please verify your phone number first",
-              error: "Unauthorized"
-            }
-          },
-          emailNotVerified: {
-            summary: "Email not verified",
-            value: {
-              statusCode: 401,
-              message: "Please verify your email first",
-              error: "Unauthorized"
-            }
           }
         }
       }
@@ -141,17 +140,21 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth("JWT-auth")
   @Post("logout")
-  logout(@Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(res);
+  logout(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
+    return this.authService.logout(res, req.user.userId);
   }
 
-  @ApiOperation({ summary: "Refresh user's credentions when access token expired" })
+  @ApiOperation({
+    summary: "Exchange a mobile refresh token for rotated JSON tokens and registration state"
+  })
   @ApiOkResponse({
     description: "Tokens successfully refreshed",
     schema: {
       type: "object",
       properties: {
-        accessToken: { type: "string", example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+        accessToken: { type: "string" },
+        refreshToken: { type: "string" },
+        registrationState: { type: "object" }
       }
     }
   })
@@ -166,12 +169,18 @@ export class AuthController {
       }
     }
   })
-  @ApiBearerAuth("JWT-auth")
   @HttpCode(HttpStatus.OK)
   @Public()
   @UseGuards(JwtRefreshGuard)
+  @ApiBody({
+    schema: {
+      type: "object",
+      required: ["refreshToken"],
+      properties: { refreshToken: { type: "string" } }
+    }
+  })
   @Post("refresh")
-  refresh(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
-    return this.authService.refresh(req.user.userId, res);
+  refresh(@Req() req: RequestWithUser) {
+    return this.authService.refresh(req.user.userId, req.user.tokenId!);
   }
 }

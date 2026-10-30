@@ -89,7 +89,7 @@ describe("SellersService", () => {
   });
 
   describe("findOne", () => {
-    it("returns a seller with its user and products", async () => {
+    it("returns a seller without loading relations that are not in the response", async () => {
       const sellerId = "seller-id";
       const seller = createSellerFixture({ id: sellerId });
 
@@ -97,8 +97,7 @@ describe("SellersService", () => {
 
       await expect(service.findOne(sellerId)).resolves.toEqual(seller);
       expect(sellersRepositoryMock.findOne).toHaveBeenCalledWith({
-        where: { id: sellerId },
-        relations: ["user", "products"]
+        where: { id: sellerId }
       });
     });
   });

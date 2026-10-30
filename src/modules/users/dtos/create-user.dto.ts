@@ -9,23 +9,25 @@ import {
   IsBoolean
 } from "class-validator";
 
+/** Individual contacts are optional here; RegistrationService enforces buyer/seller combinations. */
 export class CreateUserDto {
   @ApiProperty({ description: "User's first name", example: "Василь" })
   @IsString()
   firstName: string;
 
-  @ApiProperty({ description: "User's phone number", example: "+380991234567" })
+  @ApiProperty({ required: false, description: "User's phone number", example: "+380991234567" })
+  @IsOptional()
   @IsNotEmpty()
   @IsString()
   @Matches(/^\+\d{10,15}$/, {
     message: "Phone number must be in international format, e.g. +12345678901"
   })
-  phone: string;
+  phone?: string;
 
+  @IsOptional()
   @IsEmail({}, { message: "Invalid email format" })
-  @ApiProperty({ description: "User's email", example: "basilbasilyuk@mail.gov" })
-  @IsNotEmpty()
-  email: string;
+  @ApiProperty({ required: false, description: "User's email", example: "basilbasilyuk@mail.gov" })
+  email?: string;
 
   @ApiProperty({ description: "User's password", example: "mysecretword" })
   @IsString()
@@ -41,5 +43,5 @@ export class CreateUserDto {
   })
   @IsOptional()
   @IsBoolean()
-  isSeller: boolean;
+  isSeller?: boolean;
 }

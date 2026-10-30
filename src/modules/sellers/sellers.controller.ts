@@ -2,9 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/commo
 import { SellersService } from "./sellers.service";
 import { CreateSellerDto } from "./dto/create-seller.dto";
 import { UpdateSellerDto } from "./dto/update-seller.dto";
-import { Seller } from "../../entities/seller.entity";
-import { 
-  ApiOperation, 
+import { SellerResponseDto, toSellerResponse } from "./dto/seller-response.dto";
+import {
+  ApiOperation,
   ApiTags,
   ApiOkResponse,
   ApiCreatedResponse,
@@ -14,99 +14,109 @@ import {
   ApiNoContentResponse
 } from "@nestjs/swagger";
 
-@ApiTags('Sellers')
+@ApiTags("Sellers")
 @Controller("sellers")
 export class SellersController {
   constructor(private readonly sellersService: SellersService) {}
 
   @Post()
   @ApiOperation({ summary: "Create seller" })
-  @ApiCreatedResponse({ 
-    description: 'Seller successfully created',
-    type: Seller 
+  @ApiCreatedResponse({
+    description: "Seller successfully created",
+    type: SellerResponseDto
   })
   @ApiBadRequestResponse({
-    description: 'Validation error or seller already exists',
+    description: "Validation error or seller already exists",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { 
+        statusCode: { type: "number", example: 400 },
+        message: {
           oneOf: [
-            { type: 'string', example: 'Shop name already exists' },
-            { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty', 'userId must be a UUID'] }
+            { type: "string", example: "Shop name already exists" },
+            {
+              type: "array",
+              items: { type: "string" },
+              example: ["shopName should not be empty", "userId must be a UUID"]
+            }
           ]
         },
-        error: { type: 'string', example: 'Bad Request' }
+        error: { type: "string", example: "Bad Request" }
       }
     }
   })
-  create(@Body() createSellerDto: CreateSellerDto) {
-    return this.sellersService.create(createSellerDto);
+  async create(@Body() createSellerDto: CreateSellerDto) {
+    const seller = await this.sellersService.create(createSellerDto);
+    return toSellerResponse(seller);
   }
 
   @Get("/:id")
   @ApiOperation({ summary: "Get seller by Id" })
-  @ApiOkResponse({ 
-    description: 'Seller found successfully',
-    type: Seller 
+  @ApiOkResponse({
+    description: "Seller found successfully",
+    type: SellerResponseDto
   })
   @ApiNotFoundResponse({
-    description: 'Seller not found',
+    description: "Seller not found",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Seller not found' },
-        error: { type: 'string', example: 'Not Found' }
+        statusCode: { type: "number", example: 404 },
+        message: { type: "string", example: "Seller not found" },
+        error: { type: "string", example: "Not Found" }
       }
     }
   })
   @ApiParam({
-    name: 'id',
-    description: 'Seller ID',
-    type: 'string',
-    format: 'uuid',
-    example: '181fe998-8066-41e1-989b-71cd9a085a55'
+    name: "id",
+    description: "Seller ID",
+    type: "string",
+    format: "uuid",
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
-  findOne(@Param("id") id: string) {
-    return this.sellersService.findOne(id);
+  async findOne(@Param("id") id: string) {
+    const seller = await this.sellersService.findOne(id);
+    return seller ? toSellerResponse(seller) : null;
   }
 
   @Patch(":id")
   @ApiOperation({ summary: "Update seller" })
-  @ApiOkResponse({ 
-    description: 'Seller updated successfully',
-    type: Seller 
+  @ApiOkResponse({
+    description: "Seller updated successfully",
+    schema: { type: "string", example: "This action updates a seller with data" }
   })
   @ApiNotFoundResponse({
-    description: 'Seller not found',
+    description: "Seller not found",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Seller not found' },
-        error: { type: 'string', example: 'Not Found' }
+        statusCode: { type: "number", example: 404 },
+        message: { type: "string", example: "Seller not found" },
+        error: { type: "string", example: "Not Found" }
       }
     }
   })
   @ApiBadRequestResponse({
-    description: 'Validation error',
+    description: "Validation error",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'array', items: { type: 'string' }, example: ['shopName should not be empty'] },
-        error: { type: 'string', example: 'Bad Request' }
+        statusCode: { type: "number", example: 400 },
+        message: {
+          type: "array",
+          items: { type: "string" },
+          example: ["shopName should not be empty"]
+        },
+        error: { type: "string", example: "Bad Request" }
       }
     }
   })
   @ApiParam({
-    name: 'id',
-    description: 'Seller ID',
-    type: 'string',
-    format: 'uuid',
-    example: '181fe998-8066-41e1-989b-71cd9a085a55'
+    name: "id",
+    description: "Seller ID",
+    type: "string",
+    format: "uuid",
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
   update(@Param("id") id: string, @Body() updateSellerDto: UpdateSellerDto) {
     return this.sellersService.update(id, updateSellerDto);
@@ -114,26 +124,26 @@ export class SellersController {
 
   @Delete(":id")
   @ApiOperation({ summary: "Delete seller by ID" })
-  @ApiNoContentResponse({ 
-    description: 'Seller deleted successfully' 
+  @ApiNoContentResponse({
+    description: "Seller deleted successfully"
   })
   @ApiNotFoundResponse({
-    description: 'Seller not found',
+    description: "Seller not found",
     schema: {
-      type: 'object',
+      type: "object",
       properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Seller not found' },
-        error: { type: 'string', example: 'Not Found' }
+        statusCode: { type: "number", example: 404 },
+        message: { type: "string", example: "Seller not found" },
+        error: { type: "string", example: "Not Found" }
       }
     }
   })
   @ApiParam({
-    name: 'id',
-    description: 'Seller ID',
-    type: 'string',
-    format: 'uuid',
-    example: '181fe998-8066-41e1-989b-71cd9a085a55'
+    name: "id",
+    description: "Seller ID",
+    type: "string",
+    format: "uuid",
+    example: "181fe998-8066-41e1-989b-71cd9a085a55"
   })
   remove(@Param("id") id: string) {
     return this.sellersService.remove(id);

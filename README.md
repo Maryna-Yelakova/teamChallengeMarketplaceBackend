@@ -96,3 +96,40 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Pending mobile registration migration
+
+The registration schema migration is intentionally **not** run automatically at
+application startup. Before starting the updated backend, point `DATABASE_URL`
+at a local or test PostgreSQL database, inspect the pending migration, then run:
+
+```bash
+yarn migration:run
+```
+
+Do not use a production database URL for local migration commands. The migration
+adds nullable contact support, registration expiry state, revocable token
+versions, and contact-claim records while preserving existing accounts as active.
+
+The migration scripts use the standalone TypeORM data source and `dotenv` to load
+the database URL outside Nest. Refresh-token session records make rotation revocable.
+
+Run focused unit tests with `yarn test registration.service otp.service --runInBand --watchman=false`.
+They cover buyer/seller completion, contact transfer/removal, 48-hour expiry, OTP
+challenge binding, and refresh-token reuse without connecting to a database or OTP provider.
+
+## Registration contact availability
+
+`POST /registration/contacts/availability` accepts `{ channel: "email" | "phone", value: string }`
+and returns only `{ available: boolean }`. It performs no account creation or reservation.
+The endpoint has a local, per-client limit of 30 requests per minute; a deployment with
+multiple instances should enforce a shared limit at its gateway or rate-limit store.
+
+Both registration entry points recheck all submitted contacts inside the creation
+transaction. Conflicts return HTTP 409 with `code: "CONTACT_ALREADY_IN_USE"` and
+`fieldErrors.email` and/or `fieldErrors.phone`; no new user is saved on that failure.
+Unverified claims in pending registrations remain eligible for proof-based transfer.
+OTP confirmation still checks current ownership because availability can change.
+
+This explicit contact feedback replaces the earlier generic registration-conflict
+policy. Mobile clients may submit while a background check is unanswered or failed.

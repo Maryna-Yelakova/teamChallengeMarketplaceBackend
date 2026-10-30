@@ -20,6 +20,7 @@ import { PoliciesGuard } from "./modules/casl/policies.guard";
 import { JwtAuthGuard } from "./modules/auth/guards/jwt-auth.guard";
 import { LoggerService } from "./modules/logger/logger.service";
 import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
+import { RegistrationModule } from "./modules/registration/registration.module";
 
 @Module({
   imports: [
@@ -32,11 +33,13 @@ import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
         type: "postgres",
         url: process.env.DATABASE_URL,
         autoLoadEntities: true,
-        synchronize: true,
+        // Registration schema changes are applied explicitly through reviewed migrations.
+        synchronize: false,
+        migrations: [__dirname + "/migrations/*{.js,.ts}"],
+        migrationsRun: false,
 
+        // The custom logger controls which TypeORM events and fields are emitted.
         logger: new TypeOrmPinoLogger(logger),
-
-        logging: true,
         maxQueryExecutionTime: 200
       })
     }),
@@ -53,6 +56,7 @@ import { TypeOrmPinoLogger } from "./modules/logger/typeorm.logger";
     CategoriesModule,
     SubcategoriesModule,
     OtpModule,
+    RegistrationModule,
 
     CaslModule
   ],
